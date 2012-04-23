@@ -532,20 +532,7 @@
   d3.parsets.tree = buildTree;
 
   function autoDimensions(d) {
-    var dimensions = {};
-    for (var i = 0, x, n = d.length; i < n; i++) {
-      x = d[i];
-      for (var k in x) {
-        if (!dimensions.hasOwnProperty(k)) dimensions[k] = {};
-        dimensions[k][x[k]] = 1;
-      }
-    }
-    return d3.entries(dimensions).map(function(d) {
-      return {
-        name: d.key,
-        categories: d3.keys(d.value)
-      };
-    });
+    return d.length ? d3.keys(d[0]).sort() : [];
   }
 
   function cancelEvent() {
