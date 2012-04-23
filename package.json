@@ -1,0 +1,25 @@
+{
+  "name": "d3.parsets",
+  "version": "1.0.0",
+  "description": "Parallel Sets in JavaScript.",
+  "keywords": [
+    "parallel sets",
+    "categorical",
+    "multivariate",
+    "multidimensional",
+    "visualization"
+  ],
+  "homepage": "http://www.jasondavies.com/parallel-sets/",
+  "author": {
+    "name": "Jason Davies",
+    "url": "http://www.jasondavies.com/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "http://github.com/jasondavies/d3-parsets.git"
+  },
+  "main": "d3.parsets.js",
+  "devDependencies": {
+    "uglify-js": "1.2.x"
+  }
+}
