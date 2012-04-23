@@ -28,20 +28,24 @@ If the input data is a pivot table, you’ll want to set this to return the aggr
 
 <a name="parsets_width" href="#parsets_width">#</a> parsets.<b>width</b>(<i>width</i>)
 
-<p>Specifies the chart width in pixels. If *width* is not specified, returns the current width, which defaults to 960.
+Specifies the chart width in pixels. If *width* is not specified, returns the current width, which defaults to 960.
 
 <a name="parsets_height" href="#parsets_height">#</a> parsets.<b>height</b>(<i>height</i>)
 
-<p>Specifies the chart height in pixels. If *height* is not specified, returns the current height, which defaults to 600.
+Specifies the chart height in pixels. If *height* is not specified, returns the current height, which defaults to 600.
 
 <a name="parsets_spacing" href="#parsets_spacing">#</a> parsets.<b>spacing</b>(<i>spacing</i>)
 
-<p>Specifies the total amount of spacing in pixels to be divided between the horizontal category bars. If *spacing* is not specified, returns the current spacing, which defaults to 20.
+Specifies the total amount of spacing in pixels to be divided between the horizontal category bars. If *spacing* is not specified, returns the current spacing, which defaults to 20.
 
 <a name="parsets_tension" href="#parsets_tension">#</a> parsets.<b>tension</b>(<i>tension</i>)
 
-<p>Specifies the tension for the ribbon curves. This should be a value between 0 and 1 inclusive. If *tension* is not specified, returns the current tension, which defaults to 1 (straight lines).
+Specifies the tension for the ribbon curves. This should be a value between 0 and 1 inclusive. If *tension* is not specified, returns the current tension, which defaults to 1 (straight lines).
 
 <a name="parsets_duration" href="#parsets_duration">#</a> parsets.<b>duration</b>(<i>duration</i>)
 
-<p>Specifies the duration for the animated transitions in milliseconds. If *duration* is not specified, returns the current duration, which defaults to 500.
+Specifies the duration for the animated transitions in milliseconds. If *duration* is not specified, returns the current duration, which defaults to 500.
+
+<a name="parsets_dimensionFormat" href="#parsets_dimensionFormat">#</a> parsets.<b>dimensionFormat</b>(<i>dimensionFormat</i>)
+
+Specifies a formatting function for the dimension name. If *dimensionFormat* is not specified, returns the current formatting function, which defaults to <code>String</code>.

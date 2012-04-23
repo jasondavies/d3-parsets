@@ -3,6 +3,7 @@
 (function() {
   d3.parsets = function() {
     var dimensions_ = autoDimensions,
+        dimensionFormat = String,
         sortCategories = null,
         value_,
         spacing = 20,
@@ -112,7 +113,7 @@
               .attr("dy", "-25px");
           textEnter.append("tspan")
               .attr("class", "name")
-              .text(dimensionName);
+              .text(dimensionFormatName);
           textEnter.append("tspan")
               .attr("class", "sort alpha")
               .attr("dx", "2em")
@@ -166,9 +167,9 @@
                       .tween("ribbon", ribbonTweenY);
                 }));
           dimension.select("text").select("tspan.sort.alpha")
-              .on("click", sortBy("alpha", function(a, b) { return a.name < b.name ? 1 : -1; }));
+              .on("click", sortBy("alpha", function(a, b) { return a.name < b.name ? 1 : -1; }, dimension));
           dimension.select("text").select("tspan.sort.size")
-              .on("click", sortBy("size", function(a, b) { return a.count - b.count; }));
+              .on("click", sortBy("size", function(a, b) { return a.count - b.count; }, dimension));
           dimension.transition().duration(duration)
               .attr("transform", function(d) { return "translate(0," + d.y + ")"; })
               .tween("ribbon", ribbonTweenY);
@@ -178,13 +179,13 @@
           updateRibbons();
         }
 
-        function sortBy(type, f) {
+        function sortBy(type, f, dimension) {
           return function(d) {
             var direction = this.__direction = -(this.__direction || 1);
             d3.select(this).text(direction > 0 ? type + " »" : "« " + type);
             d.categories.sort(function() { return direction * f.apply(this, arguments); });
             nodes = layout(tree, dimensions, ordinal);
-            updateCategories(g.selectAll(".dimension"));
+            updateCategories(dimension);
           };
         }
 
@@ -350,6 +351,12 @@
       });
     }
 
+    parsets.dimensionFormat = function(_) {
+      if (!arguments.length) return dimensionFormat;
+      dimensionFormat = _;
+      return parsets;
+    };
+
     parsets.dimensions = function(_) {
       if (!arguments.length) return dimensions_;
       dimensions_ = d3.functor(_);
@@ -401,6 +408,10 @@
         .style("position", "absolute");
 
     return parsets.value(1).width(960).height(600);
+
+    function dimensionFormatName(d, i) {
+      return dimensionFormat.call(this, d.name, i);
+    }
 
     function showTooltip(html) {
       var m = d3.mouse(body.node());
