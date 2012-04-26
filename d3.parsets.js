@@ -186,6 +186,7 @@
             d.categories.sort(function() { return direction * f.apply(this, arguments); });
             nodes = layout(tree, dimensions, ordinal);
             updateCategories(dimension);
+            updateRibbons();
           };
         }
 
