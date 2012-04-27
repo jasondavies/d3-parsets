@@ -110,7 +110,7 @@
               .attr("height", 45);
           var textEnter = dEnter.append("text")
               .attr("class", "dimension")
-              .attr("dy", "-25px");
+              .attr("transform", "translate(0,-25)");
           textEnter.append("tspan")
               .attr("class", "name")
               .text(dimensionFormatName);
