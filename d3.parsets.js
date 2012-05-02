@@ -28,8 +28,8 @@
         d3.select(window).on("mousemove.parsets." + ++parsetsId, unhighlight);
 
         if (tension0 == null) tension0 = tension;
-        g.selectAll(".ribbon")
-            .data(["ribbon", "ribbon-mouse"])
+        g.selectAll(".ribbon, .ribbon-mouse")
+            .data(["ribbon", "ribbon-mouse"], String)
           .enter().append("g")
             .attr("class", String);
         updateDimensions();
@@ -138,8 +138,9 @@
                       dimensions.sort(function(a, b) { return a.y - b.y; });
                       dimensionNames = dimensions.map(function(d) { return d.name; });
                       ordinal.domain([]).range(d3.range(dimensions[0].categories.length));
-                      nodes = layout(tree = buildTree(tree, data, dimensionNames, value_), dimensions, ordinal);
+                      nodes = layout(tree = buildTree({children: {}, count: 0}, data, dimensionNames, value_), dimensions, ordinal);
                       total = getTotal(dimensions);
+                      g.selectAll(".ribbon, .ribbon-mouse").selectAll("path").remove();
                       updateRibbons();
                       updateCategories(dimension);
                       dimension.transition().duration(duration)
@@ -240,7 +241,7 @@
 
         // Animates the y-coordinates only of the relevant ribbon paths.
         function ribbonTweenY(d) {
-          var r = ribbon.filter(function(r) { return r.source.dimension.name === d.name || r.target.dimension.name === d.name; }),
+          var r = ribbon.filter(function(r) { return r.source.dimension.name == d.name || r.target.dimension.name == d.name; }),
               i = d3.interpolateNumber(d.y0, d.y);
           return function(t) {
             d.y0 = i(t);
