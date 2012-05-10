@@ -2,7 +2,8 @@
 // Functionality based on http://eagereyes.org/parallel-sets
 (function() {
   d3.parsets = function() {
-    var dimensions_ = autoDimensions,
+    var event = d3.dispatch("sortDimensions", "sortCategories"),
+        dimensions_ = autoDimensions,
         dimensionFormat = String,
         sortCategories = null,
         value_,
@@ -146,6 +147,7 @@
                       dimension.transition().duration(duration)
                           .attr("transform", function(d) { return "translate(0," + d.y + ")"; })
                           .tween("ribbon", ribbonTweenY);
+                      event.sortDimensions();
                       break;
                     }
                   }
@@ -188,6 +190,7 @@
             nodes = layout(tree, dimensions, ordinal);
             updateCategories(dimension);
             updateRibbons();
+            event.sortCategories();
           };
         }
 
@@ -305,6 +308,7 @@
                       updateRibbons();
                       updateCategories(g);
                       highlight(d.node);
+                      event.sortCategories();
                       break;
                     }
                   }
@@ -409,7 +413,7 @@
         .style("padding", "5px")
         .style("position", "absolute");
 
-    return parsets.value(1).width(960).height(600);
+    return d3.rebind(parsets, event, "on").value(1).width(960).height(600);
 
     function dimensionFormatName(d, i) {
       return dimensionFormat.call(this, d.name, i);
