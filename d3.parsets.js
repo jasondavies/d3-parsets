@@ -67,7 +67,7 @@
                     node = tree,
                     n = path.length - 1;
                 for (var i = 0; i < n; i++) {
-                  p = path[i];
+                  var p = path[i];
                   node = node.children.hasOwnProperty(p) ? node.children[p]
                       : node.children[p] = {children: {}, count: 0};
                 }
