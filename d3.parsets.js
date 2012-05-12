@@ -614,6 +614,7 @@
               children: j === nd - 1 ? null : {},
               count: 0,
               parent: node,
+              dimension: dimension,
               name: category
             };
       }
