@@ -73,7 +73,7 @@
                 }
                 node.children[d.name] = d;
               });
-          tree = buildTree(tree, data, dimensions.map(function(d) { return d.name; }), value_);
+          tree = buildTree(tree, data, dimensions.map(dimensionName), value_);
           cache = dimensions.map(function(d) {
             var t = {};
             d.categories.forEach(function(c) {
@@ -136,8 +136,8 @@
                   d.y0 = d.y = d3.event.y;
                   for (var i = 1; i < dimensions.length; i++) {
                     if (dimensions[i].y < dimensions[i - 1].y) {
-                      dimensions.sort(function(a, b) { return a.y - b.y; });
-                      dimensionNames = dimensions.map(function(d) { return d.name; });
+                      dimensions.sort(compareY);
+                      dimensionNames = dimensions.map(dimensionName);
                       ordinal.domain([]).range(d3.range(dimensions[0].categories.length));
                       nodes = layout(tree = buildTree({children: {}, count: 0}, data, dimensionNames, value_), dimensions, ordinal);
                       total = getTotal(dimensions);
@@ -145,7 +145,7 @@
                       updateRibbons();
                       updateCategories(dimension);
                       dimension.transition().duration(duration)
-                          .attr("transform", function(d) { return "translate(0," + d.y + ")"; })
+                          .attr("transform", translateY)
                           .tween("ribbon", ribbonTweenY);
                       event.sortDimensions();
                       break;
@@ -281,7 +281,7 @@
               .data(function(d) { return d.categories; }, function(d) { return d.name; });
           var categoryEnter = category.enter().append("g")
               .attr("class", "category")
-              .attr("transform", function(d) { return "translate(" + d.x + ")"; })
+              .attr("transform", function(d) { return "translate(" + d.x + ")"; });
           category
               .on("mousemove", function(d) {
                 ribbon.classed("active", false);
@@ -348,7 +348,7 @@
           category.select("rect")
               .attr("class", function(d) {
                 return d.dimension === dimensions[0] ? "category-" + ordinal(d.name) : null;
-              })
+              });
           category.select("line")
               .attr("x2", function(d) { return d.dx; });
           category.select("text")
@@ -631,4 +631,8 @@
   }
 
   function identity(d) { return d; }
+
+  function compareY(a, b) { return a.y - b.y; }
+
+  function translateY(d) { return "translate(0," + d.y + ")"; }
 })();
