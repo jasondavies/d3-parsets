@@ -34,6 +34,8 @@ Specifies the chart width in pixels. If *width* is not specified, returns the cu
 
 Specifies the chart height in pixels. If *height* is not specified, returns the current height, which defaults to 600.
 
+If a negative height is specified, this causes the dimensions to be reversed vertically, and you need to set the appropriate translate transform in the chart’s parent `<g>` element.
+
 <a name="parsets_spacing" href="#parsets_spacing">#</a> parsets.<b>spacing</b>(<i>spacing</i>)
 
 Specifies the total amount of spacing in pixels to be divided between the horizontal category bars. If *spacing* is not specified, returns the current spacing, which defaults to 20.
