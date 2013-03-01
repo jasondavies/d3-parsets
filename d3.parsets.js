@@ -59,7 +59,7 @@
             }
             dimensions.push(cache[d]);
           });
-          dimensions.sort(function(a, b) { return ascendingNaN(a.y, b.y); });
+          dimensions.sort(compareY);
           // Populate tree with existing nodes.
           g.select(".ribbon").selectAll("path")
               .each(function(d) {
@@ -135,7 +135,7 @@
                 .on("drag", function(d) {
                   d.y0 = d.y = d3.event.y;
                   for (var i = 1; i < dimensions.length; i++) {
-                    if (dimensions[i].y < dimensions[i - 1].y) {
+                    if (height * dimensions[i].y < height * dimensions[i - 1].y) {
                       dimensions.sort(compareY);
                       dimensionNames = dimensions.map(dimensionName);
                       ordinal.domain([]).range(d3.range(dimensions[0].categories.length));
@@ -545,6 +545,11 @@
           "C", [tx + tdx, m1], " ", [sx + sdx, m0], " ", [sx + sdx, sy],
           "Z"]).join("");
     }
+
+    function compareY(a, b) {
+      a = height * a.y, b = height * b.y;
+      return a < b ? -1 : a > b ? 1 : a >= b ? 0 : a <= a ? -1 : b <= b ? 1 : NaN;
+    }
   };
   d3.parsets.tree = buildTree;
 
@@ -590,10 +595,6 @@
       parsetsEase = "elastic",
       parsetsId = 0;
 
-  function ascendingNaN(a, b) {
-    return a < b ? -1 : a > b ? 1 : a >= b ? 0 : a >= a || a <= a ? -1 : b >= b || b <= b ? 1 : NaN;
-  }
-
   // Construct tree of all category counts for a given ordered list of
   // dimensions.  Similar to d3.nest, except we also set the parent.
   function buildTree(root, data, dimensions, value) {
@@ -631,8 +632,6 @@
   }
 
   function identity(d) { return d; }
-
-  function compareY(a, b) { return a.y - b.y; }
 
   function translateY(d) { return "translate(0," + d.y + ")"; }
 })();
