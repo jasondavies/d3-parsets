@@ -5,7 +5,6 @@
     var event = d3.dispatch("sortDimensions", "sortCategories"),
         dimensions_ = autoDimensions,
         dimensionFormat = String,
-        sortCategories = null,
         value_,
         spacing = 20,
         width,
@@ -314,7 +313,7 @@
                   }
                   var x = 0,
                       p = spacing / (categories.length - 1);
-                  categories.forEach(function(e, i) {
+                  categories.forEach(function(e) {
                     if (d === e) e.x0 = d3.event.x;
                     e.x = x;
                     x += e.count / total * (width - spacing) + p;
@@ -467,7 +466,7 @@
       })(tree, 0);
 
       // Stack the counts.
-      dimensions.forEach(function(d, i) {
+      dimensions.forEach(function(d) {
         d.categories = d.categories.filter(function(d) { return d.count; });
         var x = 0,
             p = spacing / (d.categories.length - 1);
@@ -591,7 +590,6 @@
   }
 
   var percent = d3.format("%"),
-      ribbonRe = /([^CLMZh, ]+)/g,
       parsetsEase = "elastic",
       parsetsId = 0;
 
