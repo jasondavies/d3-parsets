@@ -99,8 +99,8 @@
           var dEnter = dimension.enter().append("g")
               .attr("class", "dimension")
               .attr("transform", function(d) { return "translate(0," + d.y + ")"; })
-              .on("mousedown", cancelEvent)
-              .each(function(d) {
+              .on("mousedown", cancelEvent);
+          dimension.each(function(d) {
                 d.y0 = d.y;
                 d.categories.forEach(function(d) { d.x0 = d.x; });
               });
@@ -281,6 +281,7 @@
           var categoryEnter = category.enter().append("g")
               .attr("class", "category")
               .attr("transform", function(d) { return "translate(" + d.x + ")"; });
+          category.exit().remove();
           category
               .on("mousemove", function(d) {
                 ribbon.classed("active", false);
@@ -345,6 +346,7 @@
           categoryEnter.append("text")
               .attr("dy", "-.3em");
           category.select("rect")
+              .attr("width", function(d) { return d.dx; })
               .attr("class", function(d) {
                 return d.dimension === dimensions[0] ? "category-" + ordinal(d.name) : null;
               });
