@@ -409,10 +409,7 @@
     var body = d3.select("body");
     var tooltip = body.append("div")
         .style("display", "none")
-        .style("background-color", "#eee")
-        .style("background-color", "rgba(242, 242, 242, .6)")
-        .style("padding", "5px")
-        .style("position", "absolute");
+        .attr("class", "parsets tooltip");
 
     return d3.rebind(parsets, event, "on").value(1).width(960).height(600);
 
