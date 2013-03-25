@@ -26,3 +26,9 @@ path.active { fill-opacity: .9; }
 .category-7 { fill: #7f7f7f; stroke: #7f7f7f; }
 .category-8 { fill: #bcbd22; stroke: #bcbd22; }
 .category-9 { fill: #17becf; stroke: #17becf; }
+
+.tooltip {
+  background-color: rgba(242, 242, 242, .6);
+  position: absolute;
+  padding: 5px;
+}
