@@ -5,15 +5,14 @@
 .dimension tspan.sort:hover { fill: #333; }
 .dimension:hover tspan.name { fill: #000; }
 .dimension:hover tspan.sort { opacity: 1; }
-line { stroke: #000; }
-rect { fill: #fff; fill-opacity: 0; }
-.dimension rect, .category rect { stroke: none; }
+.dimension line { stroke: #000; }
+.dimension rect { stroke: none; fill-opacity: 0; }
+.dimension > rect, .category-background { fill: #fff; }
 .dimension > rect { display: none; }
 .category:hover rect { fill-opacity: .3; }
 .dimension:hover > rect { fill-opacity: .3; }
-path { fill-opacity: .5; }
-.ribbon path { stroke-opacity: 0; }
-path.active { fill-opacity: .9; }
+.ribbon path { stroke-opacity: 0; fill-opacity: .5; }
+.ribbon path.active { fill-opacity: .9; }
 .ribbon-mouse path { fill-opacity: 0; }
 
 .category-0 { fill: #1f77b4; stroke: #1f77b4; }

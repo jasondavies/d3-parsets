@@ -348,7 +348,7 @@
           category.select("rect")
               .attr("width", function(d) { return d.dx; })
               .attr("class", function(d) {
-                return d.dimension === dimensions[0] ? "category-" + ordinal(d.name) : null;
+                return "category-" + (d.dimension === dimensions[0] ? ordinal(d.name) : "background");
               });
           category.select("line")
               .attr("x2", function(d) { return d.dx; });
