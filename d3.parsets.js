@@ -1,7 +1,9 @@
 // Parallel Sets by Jason Davies, http://www.jasondavies.com/
 // Functionality based on http://eagereyes.org/parallel-sets
 (function() {
-  d3.parsets = function() {
+  d3.parsets = function(relative_percs) {
+    // relative_percs=true  calculates percentages relative to parents
+    // relative_percs=false calculates percentages relative to entire dateset
     var dimensions_ = autoDimensions,
         dimensionFormat = String,
         sortCategories = null,
@@ -11,7 +13,9 @@
         height,
         tension = 1,
         tension0,
-        duration = 500;
+        duration = 500,
+        relative_percs = relative_percs || false
+    ;
 
     function parsets(selection) {
       selection.each(function(data, i) {
@@ -212,8 +216,9 @@
                 highlight(d = d.node, true);
                 var count = d.count,
                     path = [d.name];
+                var perc_total = relative_percs ? d.parent.count : total;
                 while ((d = d.parent) && d.name) path.unshift(d.name);
-                showTooltip(path.join(", ") + "<br>" + count + ", " + percent(count / total));
+                showTooltip(path.join(", ") + "<br>" + count + ", " + percent(count / perc_total));
                 d3.event.stopPropagation();
               });
           mouse
