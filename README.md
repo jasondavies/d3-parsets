@@ -52,6 +52,28 @@ Specifies the duration for the animated transitions in milliseconds. If *duratio
 
 Specifies a formatting function for the dimension name. If *dimensionFormat* is not specified, returns the current formatting function, which defaults to <code>String</code>.
 
+<a name="parsets_tooltip" href="#parsets_tooltip">#</a> parsets.<b>tooltip</b>(<i>tooltip</i>)
+
+Specifies a formatting function for the ribbon tooltip. If *tooltip* is not specified, returns the current formatting function, which defaults to:
+
+    function(d) {
+      var count = d.count,
+          path = [];
+      while (d.parent) {
+        if (d.name) path.unshift(d.name);
+        d = d.parent;
+      }
+      return path.join(" → ") + "<br>" + comma(count) + " (" + percent(count / d.count) + ")";
+    }
+
+<a name="parsets_categoryTooltip" href="#parsets_categoryTooltip">#</a> parsets.<b>categoryTooltip</b>(<i>categoryTooltip</i>)
+
+Specifies a formatting function for the category tooltip. If *categoryTooltip* is not specified, returns the current formatting function, which defaults to:
+
+    function(d) {
+      return d.name + "<br>" + comma(d.count) + " (" + percent(d.count / d.dimension.count) + ")";
+    }
+
 <a name="parsets_on" href="#parsets_on">#</a> parsets.<b>on</b>(<i>type</i>, <i>listener</i>)
 
 Registers the specified <i>listener</i> to receive events of the specified <i>type</i> from the chart.  Currently, this includes "sortDimensions" and "sortCategories", which are fired when dimensions or categories are reordered.

@@ -5,6 +5,8 @@
     var event = d3.dispatch("sortDimensions", "sortCategories"),
         dimensions_ = autoDimensions,
         dimensionFormat = String,
+        tooltip_ = defaultTooltip,
+        categoryTooltip = defaultCategoryTooltip,
         value_,
         spacing = 20,
         width,
@@ -94,6 +96,9 @@
           ordinal.domain([]).range(d3.range(dimensions[0].categories.length));
           nodes = layout(tree, dimensions, ordinal);
           total = getTotal(dimensions);
+          dimensions.forEach(function(d) {
+            d.count = total;
+          });
           dimension = dimension.data(dimensions, dimensionName);
 
           var dEnter = dimension.enter().append("g")
@@ -212,10 +217,7 @@
                 ribbon.classed("active", false);
                 if (dragging) return;
                 highlight(d = d.node, true);
-                var count = d.count,
-                    path = [d.name];
-                while ((d = d.parent) && d.name) path.unshift(d.name);
-                showTooltip(path.join(", ") + "<br>" + count + ", " + percent(count / total));
+                showTooltip(tooltip_.call(this, d));
                 d3.event.stopPropagation();
               });
           mouse
@@ -287,7 +289,7 @@
                 ribbon.classed("active", false);
                 if (dragging) return;
                 d.nodes.forEach(function(d) { highlight(d); });
-                showTooltip(d.name + "<br>" + d.count + ", " + percent(d.count / total));
+                showTooltip(categoryTooltip.call(this, d));
                 d3.event.stopPropagation();
               })
               .on("mouseout", unhighlight)
@@ -403,6 +405,18 @@
     parsets.duration = function(_) {
       if (!arguments.length) return duration;
       duration = +_;
+      return parsets;
+    };
+
+    parsets.tooltip = function(_) {
+      if (!arguments.length) return tooltip;
+      tooltip = _ == null ? defaultTooltip : _;
+      return parsets;
+    };
+
+    parsets.categoryTooltip = function(_) {
+      if (!arguments.length) return categoryTooltip;
+      categoryTooltip = _ == null ? defaultCategoryTooltip : _;
       return parsets;
     };
 
@@ -589,6 +603,7 @@
   }
 
   var percent = d3.format("%"),
+      comma = d3.format(",f"),
       parsetsEase = "elastic",
       parsetsId = 0;
 
@@ -631,4 +646,18 @@
   function identity(d) { return d; }
 
   function translateY(d) { return "translate(0," + d.y + ")"; }
+
+  function defaultTooltip(d) {
+    var count = d.count,
+        path = [];
+    while (d.parent) {
+      if (d.name) path.unshift(d.name);
+      d = d.parent;
+    }
+    return path.join(" → ") + "<br>" + comma(count) + " (" + percent(count / d.count) + ")";
+  }
+
+  function defaultCategoryTooltip(d) {
+    return d.name + "<br>" + comma(d.count) + " (" + percent(d.count / d.dimension.count) + ")";
+  }
 })();
