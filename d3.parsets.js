@@ -104,7 +104,7 @@
           var dEnter = dimension.enter().append("g")
               .attr("class", "dimension")
               .attr("transform", function(d) { return "translate(0," + d.y + ")"; })
-              .on("mousedown", cancelEvent);
+              .on("mousedown.parsets", cancelEvent);
           dimension.each(function(d) {
                 d.y0 = d.y;
                 d.categories.forEach(function(d) { d.x0 = d.x; });
@@ -123,12 +123,12 @@
               .attr("class", "sort alpha")
               .attr("dx", "2em")
               .text("alpha »")
-              .on("mousedown", cancelEvent);
+              .on("mousedown.parsets", cancelEvent);
           textEnter.append("tspan")
               .attr("class", "sort size")
               .attr("dx", "2em")
               .text("size »")
-              .on("mousedown", cancelEvent);
+              .on("mousedown.parsets", cancelEvent);
           dimension
               .call(d3.behavior.drag()
                 .origin(identity)
@@ -174,9 +174,9 @@
                       .tween("ribbon", ribbonTweenY);
                 }));
           dimension.select("text").select("tspan.sort.alpha")
-              .on("click", sortBy("alpha", function(a, b) { return a.name < b.name ? 1 : -1; }, dimension));
+              .on("click.parsets", sortBy("alpha", function(a, b) { return a.name < b.name ? 1 : -1; }, dimension));
           dimension.select("text").select("tspan.sort.size")
-              .on("click", sortBy("size", function(a, b) { return a.count - b.count; }, dimension));
+              .on("click.parsets", sortBy("size", function(a, b) { return a.count - b.count; }, dimension));
           dimension.transition().duration(duration)
               .attr("transform", function(d) { return "translate(0," + d.y + ")"; })
               .tween("ribbon", ribbonTweenY);
@@ -213,7 +213,7 @@
           var mouse = g.select(".ribbon-mouse").selectAll("path")
               .data(nodes, function(d) { return d.path; });
           mouse.enter().append("path")
-              .on("mousemove", function(d) {
+              .on("mousemove.parsets", function(d) {
                 ribbon.classed("active", false);
                 if (dragging) return;
                 highlight(d = d.node, true);
@@ -285,15 +285,15 @@
               .attr("transform", function(d) { return "translate(" + d.x + ")"; });
           category.exit().remove();
           category
-              .on("mousemove", function(d) {
+              .on("mousemove.parsets", function(d) {
                 ribbon.classed("active", false);
                 if (dragging) return;
                 d.nodes.forEach(function(d) { highlight(d); });
                 showTooltip(categoryTooltip.call(this, d));
                 d3.event.stopPropagation();
               })
-              .on("mouseout", unhighlight)
-              .on("mousedown", cancelEvent)
+              .on("mouseout.parsets", unhighlight)
+              .on("mousedown.parsets", cancelEvent)
               .call(d3.behavior.drag()
                 .origin(identity)
                 .on("dragstart", function(d) {
