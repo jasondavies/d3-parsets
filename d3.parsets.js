@@ -615,7 +615,7 @@
         nd = dimensions.length;
     for (var i = 0; i < n; i++) {
       var d = data[i],
-          v = value(d, i),
+          v = +value(d, i),
           node = root;
       for (var j = 0; j < nd; j++) {
         var dimension = dimensions[j],
