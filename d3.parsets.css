@@ -13,6 +13,7 @@
 .dimension:hover > rect { fill-opacity: .3; }
 .ribbon path { stroke-opacity: 0; fill-opacity: .5; }
 .ribbon path.active { fill-opacity: .9; }
+.ribbon path.inactive { fill-opacity: .2; }
 .ribbon-mouse path { fill-opacity: 0; }
 
 .category-0 { fill: #1f77b4; stroke: #1f77b4; }
