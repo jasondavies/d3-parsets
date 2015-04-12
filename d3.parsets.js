@@ -263,17 +263,19 @@
           })(d);
           highlight.shift();
           if (ancestors) while (d) highlight.push(d), d = d.parent;
+          ribbon.classed("inactive", true);
           ribbon.filter(function(d) {
             var active = highlight.indexOf(d.node) >= 0;
             if (active) this.parentNode.appendChild(this);
             return active;
-          }).classed("active", true);
+          }).classed("active", true).classed("inactive", false);;
         }
 
         // Unhighlight all nodes.
         function unhighlight() {
           if (dragging) return;
           ribbon.classed("active", false);
+          ribbon.classed("inactive", false);
           hideTooltip();
         }
 
