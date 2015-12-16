@@ -1,4 +1,4 @@
-// Parallel Sets by Jason Davies, http://www.jasondavies.com/
+﻿// Parallel Sets by Jason Davies, http://www.jasondavies.com/
 // Functionality based on http://eagereyes.org/parallel-sets
 (function() {
   d3.parsets = function() {
@@ -343,8 +343,7 @@
               .attr("width", function(d) { return d.dx; })
               .attr("y", -20)
               .attr("height", 20);
-          categoryEnter.append("line")
-              .style("stroke-width", 2);
+          categoryEnter.append("line");
           categoryEnter.append("text")
               .attr("dy", "-.3em");
           category.select("rect")
@@ -654,7 +653,7 @@
       if (d.name) path.unshift(d.name);
       d = d.parent;
     }
-    return path.join(" → ") + "<br>" + comma(count) + " (" + percent(count / d.count) + ")";
+    return path.join(" &rarr; ") + "<br>" + comma(count) + " (" + percent(count / d.count) + ")";
   }
 
   function defaultCategoryTooltip(d) {
