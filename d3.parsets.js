@@ -1,10 +1,11 @@
-// Parallel Sets by Jason Davies, http://www.jasondavies.com/
+﻿// Parallel Sets by Jason Davies, http://www.jasondavies.com/
 // Functionality based on http://eagereyes.org/parallel-sets
 (function() {
   d3.parsets = function() {
     var event = d3.dispatch("sortDimensions", "sortCategories"),
         dimensions_ = autoDimensions,
         dimensionFormat = String,
+        dimensionCategoryFormat = String,
         tooltip_ = defaultTooltip,
         categoryTooltip = defaultCategoryTooltip,
         value_,
@@ -343,8 +344,7 @@
               .attr("width", function(d) { return d.dx; })
               .attr("y", -20)
               .attr("height", 20);
-          categoryEnter.append("line")
-              .style("stroke-width", 2);
+          categoryEnter.append("line");
           categoryEnter.append("text")
               .attr("dy", "-.3em");
           category.select("rect")
@@ -355,7 +355,7 @@
           category.select("line")
               .attr("x2", function(d) { return d.dx; });
           category.select("text")
-              .text(truncateText(function(d) { return d.name; }, function(d) { return d.dx; }));
+              .text(truncateText(function(d) { return dimensionCategoryFormatName(d); }, function(d) { return d.dx; }));
         }
       });
     }
@@ -363,6 +363,12 @@
     parsets.dimensionFormat = function(_) {
       if (!arguments.length) return dimensionFormat;
       dimensionFormat = _;
+      return parsets;
+    };
+
+    parsets.dimensionCategoryFormat = function(_) {
+      if (!arguments.length) return dimensionCategoryFormat;
+      dimensionCategoryFormat = _;
       return parsets;
     };
 
@@ -429,6 +435,10 @@
 
     function dimensionFormatName(d, i) {
       return dimensionFormat.call(this, d.name, i);
+    }
+
+    function dimensionCategoryFormatName(d, i) {
+      return dimensionCategoryFormat.call(this, d.name, d.dimension.name, i);
     }
 
     function showTooltip(html) {
@@ -654,7 +664,7 @@
       if (d.name) path.unshift(d.name);
       d = d.parent;
     }
-    return path.join(" → ") + "<br>" + comma(count) + " (" + percent(count / d.count) + ")";
+    return path.join(" &rarr; ") + "<br>" + comma(count) + " (" + percent(count / d.count) + ")";
   }
 
   function defaultCategoryTooltip(d) {

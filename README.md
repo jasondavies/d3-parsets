@@ -52,6 +52,10 @@ Specifies the duration for the animated transitions in milliseconds. If *duratio
 
 Specifies a formatting function for the dimension name. If *dimensionFormat* is not specified, returns the current formatting function, which defaults to <code>String</code>.
 
+<a name="parsets_dimensionCategoryFormat" href="#parsets_dimensionCategoryFormat">#</a> parsets.<b>dimensionCategoryFormat</b>(<i>dimensionCategoryFormat</i>)
+
+Specifies a formatting function for the dimension category name. If *dimensionCategoryFormat* is not specified, returns the current formatting function, which defaults to <code>String</code>.
+
 <a name="parsets_tooltip" href="#parsets_tooltip">#</a> parsets.<b>tooltip</b>(<i>tooltip</i>)
 
 Specifies a formatting function for the ribbon tooltip. If *tooltip* is not specified, returns the current formatting function, which defaults to:
