@@ -2,7 +2,7 @@
 // Functionality based on http://eagereyes.org/parallel-sets
 (function() {
   d3.parsets = function() {
-    var event = d3.dispatch("sortDimensions", "sortCategories"),
+    var dispatch = d3.dispatch("sortDimensions", "sortCategories"),
         dimensions_ = autoDimensions,
         dimensionFormat = String,
         tooltip_ = defaultTooltip,
@@ -18,7 +18,7 @@
     function parsets(selection) {
       selection.each(function(data, i) {
         var g = d3.select(this),
-            ordinal = d3.scale.ordinal(),
+            ordinal = d3.scaleOrdinal(),
             dragging = false,
             dimensionNames = dimensions_.call(this, data, i),
             dimensions = [],
@@ -105,6 +105,7 @@
               .attr("class", "dimension")
               .attr("transform", function(d) { return "translate(0," + d.y + ")"; })
               .on("mousedown.parsets", cancelEvent);
+          dimension = dEnter.merge(dimension);
           dimension.each(function(d) {
                 d.y0 = d.y;
                 d.categories.forEach(function(d) { d.x0 = d.x; });
@@ -130,9 +131,8 @@
               .text("size »")
               .on("mousedown.parsets", cancelEvent);
           dimension
-              .call(d3.behavior.drag()
-                .origin(identity)
-                .on("dragstart", function(d) {
+              .call(d3.drag()
+                .on("start", function(d) {
                   dragging = true;
                   d.y0 = d.y;
                 })
@@ -151,7 +151,7 @@
                       dimension.transition().duration(duration)
                           .attr("transform", translateY)
                           .tween("ribbon", ribbonTweenY);
-                      event.sortDimensions();
+                      dispatch.call("sortDimensions");
                       break;
                     }
                   }
@@ -161,7 +161,7 @@
                   ribbon.filter(function(r) { return r.source.dimension === d || r.target.dimension === d; })
                       .attr("d", ribbonPath);
                 })
-                .on("dragend", function(d) {
+                .on("end", function(d) {
                   dragging = false;
                   unhighlight();
                   var y0 = 45,
@@ -194,22 +194,23 @@
             nodes = layout(tree, dimensions, ordinal);
             updateCategories(dimension);
             updateRibbons();
-            event.sortCategories();
+            dispatch.call("sortCategories");
           };
         }
 
         function updateRibbons() {
           ribbon = g.select(".ribbon").selectAll("path")
               .data(nodes, function(d) { return d.path; });
-          ribbon.enter().append("path")
+          var ribbonEnter = ribbon.enter().append("path")
               .each(function(d) {
                 d.source.x0 = d.source.x;
                 d.target.x0 = d.target.x;
               })
               .attr("class", function(d) { return "category-" + d.major; })
               .attr("d", ribbonPath);
-          ribbon.sort(function(a, b) { return b.count - a.count; });
           ribbon.exit().remove();
+          ribbon = ribbonEnter.merge(ribbon);
+          ribbon.sort(function(a, b) { return b.count - a.count; });
           var mouse = g.select(".ribbon-mouse").selectAll("path")
               .data(nodes, function(d) { return d.path; });
           mouse.enter().append("path")
@@ -219,8 +220,8 @@
                 highlight(d = d.node, true);
                 showTooltip(tooltip_.call(this, d));
                 d3.event.stopPropagation();
-              });
-          mouse
+              })
+            .merge(mouse)
               .sort(function(a, b) { return b.count - a.count; })
               .attr("d", ribbonPathStatic);
           mouse.exit().remove();
@@ -284,7 +285,7 @@
               .attr("class", "category")
               .attr("transform", function(d) { return "translate(" + d.x + ")"; });
           category.exit().remove();
-          category
+          category = categoryEnter.merge(category)
               .on("mousemove.parsets", function(d) {
                 ribbon.classed("active", false);
                 if (dragging) return;
@@ -294,9 +295,8 @@
               })
               .on("mouseout.parsets", unhighlight)
               .on("mousedown.parsets", cancelEvent)
-              .call(d3.behavior.drag()
-                .origin(identity)
-                .on("dragstart", function(d) {
+              .call(d3.drag()
+                .on("start", function(d) {
                   dragging = true;
                   d.x0 = d.x;
                 })
@@ -310,7 +310,7 @@
                       updateRibbons();
                       updateCategories(g);
                       highlight(d.node);
-                      event.sortCategories();
+                      dispatch.call("sortCategories");
                       break;
                     }
                   }
@@ -327,7 +327,7 @@
                   ribbon.filter(function(r) { return r.source.node === d || r.target.node === d; })
                       .attr("d", ribbonPath);
                 })
-                .on("dragend", function(d) {
+                .on("end", function(d) {
                   dragging = false;
                   unhighlight();
                   updateRibbons();
@@ -368,13 +368,13 @@
 
     parsets.dimensions = function(_) {
       if (!arguments.length) return dimensions_;
-      dimensions_ = d3.functor(_);
+      dimensions_ = functor(_);
       return parsets;
     };
 
     parsets.value = function(_) {
       if (!arguments.length) return value_;
-      value_ = d3.functor(_);
+      value_ = functor(_);
       return parsets;
     };
 
@@ -425,7 +425,12 @@
         .style("display", "none")
         .attr("class", "parsets tooltip");
 
-    return d3.rebind(parsets, event, "on").value(1).width(960).height(600);
+    parsets.on = function() {
+      var value = dispatch.on.apply(dispatch, arguments);
+      return value === dispatch ? parsets : value;
+    };
+
+    return parsets.value(1).width(960).height(600);
 
     function dimensionFormatName(d, i) {
       return dimensionFormat.call(this, d.name, i);
@@ -604,7 +609,7 @@
 
   var percent = d3.format("%"),
       comma = d3.format(",f"),
-      parsetsEase = "elastic",
+      parsetsEase = d3.easeElastic,
       parsetsId = 0;
 
   // Construct tree of all category counts for a given ordered list of
@@ -659,5 +664,11 @@
 
   function defaultCategoryTooltip(d) {
     return d.name + "<br>" + comma(d.count) + " (" + percent(d.count / d.dimension.count) + ")";
+  }
+
+  function functor(v) {
+    return typeof v === "function" ? v : function() {
+      return v;
+    };
   }
 })();
