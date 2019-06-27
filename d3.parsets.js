@@ -223,7 +223,9 @@
             nodes = layout(tree, dimensions, ordinal);
             updateCategories(dimension.merge(dimension.enter()));
             updateRibbons();
-            // event.call("sortCategories");
+
+            // This isn't really doing anything...
+            event.call("sortCategories");
           };
         }
 
