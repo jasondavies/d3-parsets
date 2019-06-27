@@ -1,7 +1,5 @@
 // Parallel Sets by Jason Davies, http://www.jasondavies.com/
 // Functionality based on http://eagereyes.org/parallel-sets
-/* global d3 */
-/* eslint indent: "off" */
 (function() {
   d3.parsets = function() {
     var event = d3.dispatch("sortDimensions", "sortCategories"),
@@ -17,41 +15,17 @@
         tension0,
         duration = 500;
 
-    // https://stackoverflow.com/questions/47844765/d3-rebind-in-d3-v4
-    // Copies a variable number of methods from source to target.
-    d3.rebind = function(target, source) {
-      var i = 1, n = arguments.length, method;
-      while (++i < n) target[method = arguments[i]] = d3_rebind(target, source, source[method]);
-      return target;
-    };
-
-    // Method is assumed to be a standard D3 getter-setter:
-    // If passed with no arguments, gets the value.
-    // If passed with arguments, sets the value and returns the target.
-    function d3_rebind(target, source, method) {
-      return function() {
-        var value = method.apply(source, arguments);
-        return value === source ? target : value;
-      };
-    }
-
-    function d3_functor(v) {
-      return typeof v === "function" ? v : function() { return v; };
-    }
-
     function parsets(selection) {
       selection.each(function(data, i) {
-        console.log("parsets ", data);
         var g = d3.select(this),
-            ordinal = d3.scaleOrdinal(),
+            ordinal = d3.scale.ordinal(),
             dragging = false,
             dimensionNames = dimensions_.call(this, data, i),
             dimensions = [],
             tree = {children: {}, count: 0},
             nodes,
             total,
-            ribbon,
-            ribbonEnter;
+            ribbon;
 
         d3.select(window).on("mousemove.parsets." + ++parsetsId, unhighlight);
 
@@ -60,7 +34,6 @@
             .data(["ribbon", "ribbon-mouse"], String)
           .enter().append("g")
             .attr("class", String);
-
         updateDimensions();
         if (tension != tension0) {
           var t = d3.transition(g);
@@ -72,7 +45,7 @@
           var i = d3.interpolateNumber(tension0, tension);
           return function(t) {
             tension0 = i(t);
-            ribbon.merge(ribbonEnter).attr("d", ribbonPath);
+            ribbon.attr("d", ribbonPath);
           };
         }
 
@@ -132,7 +105,7 @@
               .attr("class", "dimension")
               .attr("transform", function(d) { return "translate(0," + d.y + ")"; })
               .on("mousedown.parsets", cancelEvent);
-          dimension.merge(dEnter).each(function(d) {
+          dimension.each(function(d) {
                 d.y0 = d.y;
                 d.categories.forEach(function(d) { d.x0 = d.x; });
               });
@@ -156,10 +129,10 @@
               .attr("dx", "2em")
               .text("size »")
               .on("mousedown.parsets", cancelEvent);
-          dimension.merge(dEnter)
-              .call(d3.drag()
-                // .origin(identity)
-                .on("start", function(d) {
+          dimension
+              .call(d3.behavior.drag()
+                .origin(identity)
+                .on("dragstart", function(d) {
                   dragging = true;
                   d.y0 = d.y;
                 })
@@ -172,15 +145,13 @@
                       ordinal.domain([]).range(d3.range(dimensions[0].categories.length));
                       nodes = layout(tree = buildTree({children: {}, count: 0}, data, dimensionNames, value_), dimensions, ordinal);
                       total = getTotal(dimensions);
-                      g.selectAll(".ribbon, .ribbon-mouse").selectAll("path").remove();                      
-                      updateCategories(dimension.merge(dEnter));
+                      g.selectAll(".ribbon, .ribbon-mouse").selectAll("path").remove();
                       updateRibbons();
-                      dimension.merge(dEnter).transition().duration(duration)
+                      // updateCategories(dimension);
+                      dimension.transition().duration(duration)
                           .attr("transform", translateY)
                           .tween("ribbon", ribbonTweenY);
-
-                      // This isn't really doing anything...
-                      event.call("sortDimensions");
+                      // event.sortDimensions();
                       break;
                     }
                   }
@@ -190,7 +161,7 @@
                   ribbon.filter(function(r) { return r.source.dimension === d || r.target.dimension === d; })
                       .attr("d", ribbonPath);
                 })
-                .on("end", function(d) {
+                .on("dragend", function(d) {
                   dragging = false;
                   unhighlight();
                   var y0 = 45,
@@ -202,16 +173,16 @@
                       .attr("transform", "translate(0," + d.y + ")")
                       .tween("ribbon", ribbonTweenY);
                 }));
-          dimension.merge(dEnter).select("text").select("tspan.sort.alpha")
+          dimension.select("text").select("tspan.sort.alpha")
               .on("click.parsets", sortBy("alpha", function(a, b) { return a.name < b.name ? 1 : -1; }, dimension));
-          dimension.merge(dEnter).select("text").select("tspan.sort.size")
+          dimension.select("text").select("tspan.sort.size")
               .on("click.parsets", sortBy("size", function(a, b) { return a.count - b.count; }, dimension));
-          dimension.merge(dEnter).transition().duration(duration)
+          dimension.transition().duration(duration)
               .attr("transform", function(d) { return "translate(0," + d.y + ")"; })
               .tween("ribbon", ribbonTweenY);
           dimension.exit().remove();
 
-          updateCategories(dimension.merge(dEnter));
+          updateCategories(dimension);
           updateRibbons();
         }
 
@@ -221,33 +192,27 @@
             d3.select(this).text(direction > 0 ? type + " »" : "« " + type);
             d.categories.sort(function() { return direction * f.apply(this, arguments); });
             nodes = layout(tree, dimensions, ordinal);
-            updateCategories(dimension.merge(dimension.enter()));
+            updateCategories(dimension);
             updateRibbons();
-            // event.call("sortCategories");
+            // event.sortCategories();
           };
         }
 
         function updateRibbons() {
           ribbon = g.select(".ribbon").selectAll("path")
               .data(nodes, function(d) { return d.path; });
-          ribbonEnter = ribbon.enter().append("path")
+          ribbon.enter().append("path")
               .each(function(d) {
                 d.source.x0 = d.source.x;
                 d.target.x0 = d.target.x;
-              });
-
-          ribbonEnter.merge(ribbon)
+              })
               .attr("class", function(d) { return "category-" + d.major; })
               .attr("d", ribbonPath);
-          ribbonEnter.merge(ribbon).sort(function(a, b) { return b.count - a.count; });
+          ribbon.sort(function(a, b) { return b.count - a.count; });
           ribbon.exit().remove();
-
-
           var mouse = g.select(".ribbon-mouse").selectAll("path")
               .data(nodes, function(d) { return d.path; });
-          var mouseEnter = mouse.enter().append("path");   
-
-          mouseEnter.merge(mouse)
+          mouse.enter().append("path")
               .on("mousemove.parsets", function(d) {
                 ribbon.classed("active", false);
                 if (dragging) return;
@@ -255,7 +220,7 @@
                 showTooltip(tooltip_.call(this, d));
                 d3.event.stopPropagation();
               });
-          mouse.merge(mouseEnter)
+          mouse
               .sort(function(a, b) { return b.count - a.count; })
               .attr("d", ribbonPathStatic);
           mouse.exit().remove();
@@ -264,7 +229,7 @@
         // Animates the x-coordinates only of the relevant ribbon paths.
         function ribbonTweenX(d) {
           var nodes = [d],
-              r = ribbon.merge(ribbonEnter).filter(function(r) {
+              r = ribbon.filter(function(r) {
                 var s, t;
                 if (r.source.node === d) nodes.push(s = r.source);
                 if (r.target.node === d) nodes.push(t = r.target);
@@ -280,7 +245,7 @@
 
         // Animates the y-coordinates only of the relevant ribbon paths.
         function ribbonTweenY(d) {
-          var r = ribbon.merge(ribbonEnter).filter(function(r) { return r.source.dimension.name == d.name || r.target.dimension.name == d.name; }),
+          var r = ribbon.filter(function(r) { return r.source.dimension.name == d.name || r.target.dimension.name == d.name; }),
               i = d3.interpolateNumber(d.y0, d.y);
           return function(t) {
             d.y0 = i(t);
@@ -312,20 +277,14 @@
           hideTooltip();
         }
 
-        function updateCategories(g) {          
+        function updateCategories(g) {
           var category = g.selectAll("g.category")
               .data(function(d) { return d.categories; }, function(d) { return d.name; });
-
           var categoryEnter = category.enter().append("g")
-              .attr("class", "category");
-
-          categoryEnter.merge(category)
+              .attr("class", "category")
               .attr("transform", function(d) { return "translate(" + d.x + ")"; });
-
-          // TODO: Don't really understand why I had to comment this one out
-          // category.exit().remove();
+          category.exit().remove();
           category
-              .merge(categoryEnter)
               .on("mousemove.parsets", function(d) {
                 ribbon.classed("active", false);
                 if (dragging) return;
@@ -335,9 +294,9 @@
               })
               .on("mouseout.parsets", unhighlight)
               .on("mousedown.parsets", cancelEvent)
-              .call(d3.drag()
-                // .origin(identity)
-                .on("start", function(d) {
+              .call(d3.behavior.drag()
+                .origin(identity)
+                .on("dragstart", function(d) {
                   dragging = true;
                   d.x0 = d.x;
                 })
@@ -351,7 +310,7 @@
                       updateRibbons();
                       updateCategories(g);
                       highlight(d.node);
-                      event.call("sortCategories");
+                      // event.sortCategories();
                       break;
                     }
                   }
@@ -368,7 +327,7 @@
                   ribbon.filter(function(r) { return r.source.node === d || r.target.node === d; })
                       .attr("d", ribbonPath);
                 })
-                .on("end", function(d) {
+                .on("dragend", function(d) {
                   dragging = false;
                   unhighlight();
                   updateRibbons();
@@ -376,7 +335,7 @@
                       .attr("transform", "translate(" + d.x + ")")
                       .tween("ribbon", ribbonTweenX);
                 }));
-          category.merge(categoryEnter).transition().duration(duration)
+          category.transition().duration(duration)
               .attr("transform", function(d) { return "translate(" + d.x + ")"; })
               .tween("ribbon", ribbonTweenX);
 
@@ -388,14 +347,14 @@
               .style("stroke-width", 2);
           categoryEnter.append("text")
               .attr("dy", "-.3em");
-          category.merge(categoryEnter).select("rect")
+          category.select("rect")
               .attr("width", function(d) { return d.dx; })
               .attr("class", function(d) {
                 return "category-" + (d.dimension === dimensions[0] ? ordinal(d.name) : "background");
               });
-          category.merge(categoryEnter).select("line")
+          category.select("line")
               .attr("x2", function(d) { return d.dx; });
-          category.merge(categoryEnter).select("text")
+          category.select("text")
               .text(truncateText(function(d) { return d.name; }, function(d) { return d.dx; }));
         }
       });
@@ -409,13 +368,13 @@
 
     parsets.dimensions = function(_) {
       if (!arguments.length) return dimensions_;
-      dimensions_ = d3_functor(_);
+      dimensions_ = d3.functor(_);
       return parsets;
     };
 
     parsets.value = function(_) {
       if (!arguments.length) return value_;
-      value_ = d3_functor(_);
+      value_ = d3.functor(_);
       return parsets;
     };
 
@@ -645,7 +604,7 @@
 
   var percent = d3.format("%"),
       comma = d3.format(",f"),
-      parsetsEase = d3.easeElastic,
+      parsetsEase = "elastic",
       parsetsId = 0;
 
   // Construct tree of all category counts for a given ordered list of
