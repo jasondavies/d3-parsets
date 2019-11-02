@@ -20,6 +20,6 @@
   },
   "main": "d3.parsets.js",
   "devDependencies": {
-    "uglify-js": "1.2.x"
+    "uglify-js": "3.6.x"
   }
 }
