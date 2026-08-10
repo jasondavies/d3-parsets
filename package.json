@@ -1,26 +1,58 @@
 {
-  "name": "d3.parsets",
-  "version": "1.2.3",
-  "description": "Parallel Sets in JavaScript.",
+  "name": "d3-parsets",
+  "version": "2.0.0-alpha.1",
+  "description": "Parallel Sets in JavaScript, built on D3.",
   "keywords": [
+    "d3",
+    "d3-module",
     "parallel sets",
     "categorical",
     "multivariate",
     "multidimensional",
     "visualization"
   ],
-  "homepage": "http://www.jasondavies.com/parallel-sets/",
+  "homepage": "https://github.com/mikima/d3-parsets",
   "author": {
     "name": "Jason Davies",
     "url": "http://www.jasondavies.com/"
   },
+  "contributors": [
+    {
+      "name": "Michele Mauri"
+    }
+  ],
+  "license": "BSD-3-Clause",
   "repository": {
     "type": "git",
-    "url": "http://github.com/jasondavies/d3-parsets.git"
+    "url": "https://github.com/mikima/d3-parsets.git"
   },
-  "main": "d3.parsets.js",
+  "type": "module",
+  "main": "src/index.js",
+  "module": "src/index.js",
+  "exports": {
+    "umd": "./dist/d3-parsets.min.js",
+    "default": "./src/index.js"
+  },
+  "files": [
+    "dist/**/*.js",
+    "src/**/*.js"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "test": "mocha 'test/**/*-test.js' && eslint src test",
+    "build": "rollup -c",
+    "prepublishOnly": "rm -rf dist && npm run build && npm test"
+  },
+  "engines": {
+    "node": ">=18"
+  },
   "devDependencies": {
+    "@eslint/js": "^9.9.1",
+    "@rollup/plugin-terser": "^0.4.4",
     "d3": "^7.9.0",
-    "uglify-js": "1.2.x"
+    "eslint": "^9.9.1",
+    "globals": "^15.9.0",
+    "mocha": "^10.7.3",
+    "rollup": "^4.21.2"
   }
 }

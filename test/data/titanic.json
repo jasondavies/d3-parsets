@@ -1,0 +1,18 @@
+[
+  {"Class": "1st", "Sex": "Male", "Survived": "No", "count": 118},
+  {"Class": "1st", "Sex": "Male", "Survived": "Yes", "count": 62},
+  {"Class": "1st", "Sex": "Female", "Survived": "No", "count": 4},
+  {"Class": "1st", "Sex": "Female", "Survived": "Yes", "count": 141},
+  {"Class": "2nd", "Sex": "Male", "Survived": "No", "count": 154},
+  {"Class": "2nd", "Sex": "Male", "Survived": "Yes", "count": 25},
+  {"Class": "2nd", "Sex": "Female", "Survived": "No", "count": 13},
+  {"Class": "2nd", "Sex": "Female", "Survived": "Yes", "count": 93},
+  {"Class": "3rd", "Sex": "Male", "Survived": "No", "count": 387},
+  {"Class": "3rd", "Sex": "Male", "Survived": "Yes", "count": 88},
+  {"Class": "3rd", "Sex": "Female", "Survived": "No", "count": 89},
+  {"Class": "3rd", "Sex": "Female", "Survived": "Yes", "count": 90},
+  {"Class": "Crew", "Sex": "Male", "Survived": "No", "count": 670},
+  {"Class": "Crew", "Sex": "Male", "Survived": "Yes", "count": 192},
+  {"Class": "Crew", "Sex": "Female", "Survived": "No", "count": 3},
+  {"Class": "Crew", "Sex": "Female", "Survived": "Yes", "count": 20}
+]

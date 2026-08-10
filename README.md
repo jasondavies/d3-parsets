@@ -1,81 +1,86 @@
-# d3.parsets
+# d3-parsets
 
-An interactive parallel sets visualisation for D3.js.
+A parallel sets layout for D3.js, in the spirit of [d3-sankey](https://github.com/d3/d3-sankey): `parsetsLayout()` is a pure function that turns categorical data into geometry (dimension rows, category bars, connecting links). It renders nothing itself — rendering, dragging, sorting and tooltips are the caller's responsibility, exactly as with sankey's node/link layout. See [docs/](docs/) for a complete SVG + d3-drag renderer built on top of it.
 
-Requires [D3](https://d3js.org/) v7. Load `d3.parsets.css` and `d3.parsets.js` after the D3 v7 script; see [demo/index.html](demo/index.html) for a working example.
+Originally based on [d3.parsets](https://github.com/jasondavies/d3-parsets) by Jason Davies, itself based on [Parallel Sets](http://eagereyes.org/parallel-sets) by Robert Kosara and Caroline Ziemkiewicz.
 
-Example: <http://www.jasondavies.com/parallel-sets/>.
+## Install
 
-![Titanic Survivors](http://www.jasondavies.com/parallel-sets/parsets.png)
+```
+npm install d3-parsets
+```
 
-Functionality based on [Parallel Sets](http://eagereyes.org/parallel-sets) by Robert Kosara and Caroline Ziemkiewicz.
+```js
+import {parsetsLayout} from "d3-parsets";
+```
+
+## Example
+
+```js
+const data = [
+  {Class: "1st", Sex: "Male", Survived: "No", count: 118},
+  {Class: "1st", Sex: "Male", Survived: "Yes", count: 62},
+  // …
+];
+
+const {dimensions, links} = parsetsLayout()
+    .width(960)
+    .height(600)
+    .dimensions(["Class", "Sex", "Survived"])
+    .value(d => d.count)
+    (data);
+```
+
+`dimensions` is an array of `{name, y, categories}`, where each category is `{name, count, x, dx}`. `links` is an array of `{path, count, rootCategory, source, target}`, where `source`/`target` are `{dimension, category, x, dx, y}` — the flow's attachment point on each side. Run it again with different arguments (a reordered `.dimensions()` array, a different `.categorySort()`) to get new geometry; nothing is kept between calls. See [docs/render.js](docs/render.js) for how to turn this into an interactive chart, including how a renderer keeps the state the layout deliberately doesn't (current order, previous frame for animation).
 
 ## API
 
-<a name="d3_parsets" href="#d3_parsets">#</a> d3.<b>parsets</b>()
+<a name="parsetsLayout" href="#parsetsLayout">#</a> <b>parsetsLayout</b>()
 
-Creates a new parallel sets chart with default settings: dimensions are automatically detected and the size is 960×600. The chart is a function that can be called on any D3 selection that has data bound to it.  This function can be configured as described below.
+Creates a new layout with default settings. The returned function is stateless: calling it with the same arguments always returns the same geometry.
 
-<a name="parsets_dimensions" href="#parsets_dimensions">#</a> parsets.<b>dimensions</b>(<i>dimensions</i>)
+<a name="parsetsLayout_dimensions" href="#parsetsLayout_dimensions">#</a> <i>parsetsLayout</i>.<b>dimensions</b>([<i>dimensions</i>])
 
-If *dimensions* is specified, sets the categorical dimensions to be visualised. If a function is specified, it is invoked for every element in the target selection and an array of dimension names is expected in return. If an array is specified, it should be an array of dimension names (object keys).
+If *dimensions* is specified, sets the ordered list of categorical dimensions to lay out. If a function is specified, it is invoked with the input data and an array of dimension names is expected in return; if an array is specified, it is used as-is. Defaults to the sorted keys of the first data row.
 
-If *dimensions* is not specified, returns the current dimensions.
+<a name="parsetsLayout_value" href="#parsetsLayout_value">#</a> <i>parsetsLayout</i>.<b>value</b>([<i>value</i>])
 
-<a name="parsets_value" href="#parsets_value">#</a> parsets.<b>value</b>(<i>value</i>)
+If *value* is specified, sets the value accessor, invoked once per input row. Defaults to a constant `1`, i.e. counting rows. Set this to an accessor returning the aggregate count if the input is already a pivot table.
 
-Specifies the value accessor. If *value* is not specified, returns the current value accessor. The default accessor simply returns 1 for each input data element i.e. the absolute frequency count. This value is used to set the width of the horizontal bars and connecting ribbons in proportion to the value.
+<a name="parsetsLayout_width" href="#parsetsLayout_width">#</a> <i>parsetsLayout</i>.<b>width</b>([<i>width</i>])
 
-If the input data is a pivot table, you’ll want to set this to return the aggregate sum for each input data element.  You could also use an arbitrary numerical measure instead of frequency if appropriate.
+The horizontal extent categories are stacked across. Defaults to 1.
 
-<a name="parsets_width" href="#parsets_width">#</a> parsets.<b>width</b>(<i>width</i>)
+<a name="parsetsLayout_height" href="#parsetsLayout_height">#</a> <i>parsetsLayout</i>.<b>height</b>([<i>height</i>])
 
-Specifies the chart width in pixels. If *width* is not specified, returns the current width, which defaults to 960.
+The vertical extent dimensions are spread across. Defaults to 1.
 
-<a name="parsets_height" href="#parsets_height">#</a> parsets.<b>height</b>(<i>height</i>)
+<a name="parsetsLayout_spacing" href="#parsetsLayout_spacing">#</a> <i>parsetsLayout</i>.<b>spacing</b>([<i>spacing</i>])
 
-Specifies the chart height in pixels. If *height* is not specified, returns the current height, which defaults to 600.
+Total horizontal spacing distributed between a dimension's categories. Defaults to 20.
 
-If a negative height is specified, this causes the dimensions to be reversed vertically, and you need to set the appropriate translate transform in the chart’s parent `<g>` element.
+<a name="parsetsLayout_nodeThickness" href="#parsetsLayout_nodeThickness">#</a> <i>parsetsLayout</i>.<b>nodeThickness</b>([<i>nodeThickness</i>])
 
-<a name="parsets_spacing" href="#parsets_spacing">#</a> parsets.<b>spacing</b>(<i>spacing</i>)
+Vertical thickness reserved for each dimension's node bar — the equivalent of `nodeWidth` in d3-sankey. Links attach to its outer edges, so this is also the gap left between the flow arriving at a dimension and the flow leaving it. Defaults to 4.
 
-Specifies the total amount of spacing in pixels to be divided between the horizontal category bars. If *spacing* is not specified, returns the current spacing, which defaults to 20.
+<a name="parsetsLayout_categorySort" href="#parsetsLayout_categorySort">#</a> <i>parsetsLayout</i>.<b>categorySort</b>([<i>categorySort</i>])
 
-<a name="parsets_tension" href="#parsets_tension">#</a> parsets.<b>tension</b>(<i>tension</i>)
+If specified, a function `(dimensionName) => comparator | falsy`, called once per dimension so each can be sorted independently — e.g. reflecting a drag-derived order for one dimension while others keep their default (first-encountered) order. Return a falsy value to leave a dimension's categories unsorted.
 
-Specifies the tension for the ribbon curves. This should be a value between 0 and 1 inclusive. If *tension* is not specified, returns the current tension, which defaults to 1 (straight lines).
+## Development
 
-<a name="parsets_duration" href="#parsets_duration">#</a> parsets.<b>duration</b>(<i>duration</i>)
+```
+npm test    # mocha + eslint
+npm run build   # UMD bundle in dist/
+```
 
-Specifies the duration for the animated transitions in milliseconds. If *duration* is not specified, returns the current duration, which defaults to 500.
+## Releasing
 
-<a name="parsets_dimensionFormat" href="#parsets_dimensionFormat">#</a> parsets.<b>dimensionFormat</b>(<i>dimensionFormat</i>)
+```
+npm version patch   # or minor / major — bumps package.json and creates the matching git tag together
+git push --follow-tags
+npm publish
+gh release create "v$(node -p "require('./package.json').version")" --generate-notes
+```
 
-Specifies a formatting function for the dimension name. If *dimensionFormat* is not specified, returns the current formatting function, which defaults to <code>String</code>.
-
-<a name="parsets_tooltip" href="#parsets_tooltip">#</a> parsets.<b>tooltip</b>(<i>tooltip</i>)
-
-Specifies a formatting function for the ribbon tooltip. If *tooltip* is not specified, returns the current formatting function, which defaults to:
-
-    function(d) {
-      var count = d.count,
-          path = [];
-      while (d.parent) {
-        if (d.name) path.unshift(d.name);
-        d = d.parent;
-      }
-      return path.join(" → ") + "<br>" + comma(count) + " (" + percent(count / d.count) + ")";
-    }
-
-<a name="parsets_categoryTooltip" href="#parsets_categoryTooltip">#</a> parsets.<b>categoryTooltip</b>(<i>categoryTooltip</i>)
-
-Specifies a formatting function for the category tooltip. If *categoryTooltip* is not specified, returns the current formatting function, which defaults to:
-
-    function(d) {
-      return d.name + "<br>" + comma(d.count) + " (" + percent(d.count / d.dimension.count) + ")";
-    }
-
-<a name="parsets_on" href="#parsets_on">#</a> parsets.<b>on</b>(<i>type</i>, <i>listener</i>)
-
-Registers the specified <i>listener</i> to receive events of the specified <i>type</i> from the chart.  Currently, this includes "sortDimensions" and "sortCategories", which are fired when dimensions or categories are reordered.
+Always bump with `npm version` rather than editing `package.json` and tagging separately — it keeps the git tag and the published version from drifting apart. The last step (turning the tag into a GitHub release with notes) is optional.
