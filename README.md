@@ -31,7 +31,37 @@ const {dimensions, links} = parsetsLayout()
     (data);
 ```
 
-`dimensions` is an array of `{name, y, categories}`, where each category is `{name, count, x, dx}`. `links` is an array of `{path, count, rootCategory, source, target}`, where `source`/`target` are `{dimension, category, x, dx, y}` — the flow's attachment point on each side. Run it again with different arguments (a reordered `.dimensions()` array, a different `.categorySort()`) to get new geometry; nothing is kept between calls. See [docs/render.js](docs/render.js) for how to turn this into an interactive chart, including how a renderer keeps the state the layout deliberately doesn't (current order, previous frame for animation).
+Run it again with different arguments (a reordered `.dimensions()` array, a different `.categorySort()`) to get new geometry; nothing is kept between calls. See [docs/render.js](docs/render.js) for a complete renderer, including how it keeps the state the layout deliberately doesn't (current order, previous frame for animation).
+
+## Output
+
+`parsetsLayout()(data)` returns `{dimensions, links}` — plain data, no DOM, no D3 selections. This is what's in them.
+
+**`dimensions`**: one entry per configured dimension, in order, each `{name, y, categories}`.
+
+- `name` — the dimension name, e.g. `"Class"`.
+- `y` — the vertical center of this dimension's node bar. Already accounts for `nodeThickness`, so the first and last bars sit fully inside `[0, height]` — draw the bar centered on this `y`, thickness `nodeThickness`.
+- `categories` — that dimension's distinct values, stacked left to right, each `{name, count, x, dx}`: `name`/`count` are the category value and its aggregate, `x`/`dx` are its absolute horizontal position and width (proportional to `count`). Draw a category as a bar/rect at `[x, x + dx]`.
+
+**`links`**: one entry per edge between two adjacent dimensions' categories (e.g. every non-empty Class → Sex combination), each `{path, count, rootCategory, source, target}`.
+
+- `path` — a string unique to this link (category names joined by `"\0"`), stable across calls with the same data/order. Use it as the key in a D3 `.data(links, d => d.path)` join.
+- `count` — this link's aggregate value.
+- `rootCategory` — the name of the category in `dimensions[0]` this link traces back to. Not a color or an index — pick a scale yourself, e.g. `d3.scaleOrdinal(d3.schemeCategory10).domain(dimensions[0].categories.map(c => c.name))`, and look up `color(link.rootCategory)`.
+- `source`/`target` — where the link attaches on each side, `{dimension, category, x, dx, y}`. `dimension`/`category` are the *same object references* as in `dimensions`/`dimensions[i].categories` (so `link.source.dimension === dimensions[0]` holds — useful for filtering, e.g. every link touching a given category). `x` is this link's own offset *within* its category's band (add `category.x` for an absolute coordinate: `category.x + x`); `dx` is this link's own width, the same value on both `source` and `target`. `y` is already offset outward by `nodeThickness / 2` from the dimension's `y` — the point where the flow should visually touch the bar, no further adjustment needed.
+
+A straight-sided ribbon between a link's two attachment points, for example:
+
+```js
+function ribbonPath(d) {
+  const s = d.source, t = d.target;
+  const sx = s.category.x + s.x, sy = s.y;
+  const tx = t.category.x + t.x, ty = t.y;
+  return `M${sx},${sy}L${tx},${ty}h${t.dx}L${sx + s.dx},${sy}Z`;
+}
+```
+
+[docs/render.js](docs/render.js) has three worked variants of this (straight, curved, and a single stroked centerline via `d3.linkVertical()`) plus drag-to-reorder, sorting and tooltips built on the same output.
 
 ## API
 
