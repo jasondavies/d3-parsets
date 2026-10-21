@@ -1,0 +1,36 @@
+<!doctype html>
+<meta charset="utf-8">
+<link rel="stylesheet" href="/dist/d3-parsets.css">
+<!-- dist/d3-parsets.js imports its D3 dependencies by package name. -->
+<script type="importmap">
+{"imports": {
+  "d3-color": "/node_modules/d3-color/src/index.js",
+  "d3-dispatch": "/node_modules/d3-dispatch/src/index.js",
+  "d3-drag": "/node_modules/d3-drag/src/index.js",
+  "d3-ease": "/node_modules/d3-ease/src/index.js",
+  "d3-format": "/node_modules/d3-format/src/index.js",
+  "d3-interpolate": "/node_modules/d3-interpolate/src/index.js",
+  "d3-selection": "/node_modules/d3-selection/src/index.js",
+  "d3-timer": "/node_modules/d3-timer/src/index.js",
+  "d3-transition": "/node_modules/d3-transition/src/index.js"
+}}
+</script>
+<script type="module">
+import parsets from "/dist/d3-parsets.js";
+import {select, selectAll} from "d3-selection";
+window.select = select;
+window.selectAll = selectAll;
+window.parsets = parsets;
+window.rows = [
+  {A: "a", B: "x", C: "m"},
+  {A: "a", B: "y", C: "n"},
+  {A: "b", B: "x", C: "n"}
+];
+window.mount = (data = rows, configure = c => c.dimensions(["A", "B", "C"])) => {
+  select("body").selectAll("svg").remove();
+  window.chart = configure(parsets());
+  window.svg = select("body").append("svg")
+    .attr("width", chart.width()).attr("height", chart.height());
+  svg.datum(data).call(chart);
+};
+</script>

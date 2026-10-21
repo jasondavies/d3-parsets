@@ -1,25 +1,80 @@
 {
-  "name": "d3.parsets",
-  "version": "1.2.3",
+  "name": "d3-parsets",
+  "version": "3.0.0",
   "description": "Parallel Sets in JavaScript.",
+  "type": "module",
   "keywords": [
     "parallel sets",
     "categorical",
     "multivariate",
     "multidimensional",
+    "visualisation",
     "visualization"
   ],
-  "homepage": "http://www.jasondavies.com/parallel-sets/",
+  "homepage": "https://www.jasondavies.com/parallel-sets/",
   "author": {
     "name": "Jason Davies",
-    "url": "http://www.jasondavies.com/"
+    "url": "https://www.jasondavies.com/"
   },
   "repository": {
     "type": "git",
-    "url": "http://github.com/jasondavies/d3-parsets.git"
+    "url": "https://github.com/jasondavies/d3-parsets.git"
   },
-  "main": "d3.parsets.js",
+  "main": "dist/d3-parsets.js",
+  "module": "dist/d3-parsets.js",
+  "types": "src/index.d.ts",
+  "unpkg": "dist/d3-parsets.min.js",
+  "jsdelivr": "dist/d3-parsets.min.js",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "default": "./dist/d3-parsets.js"
+    },
+    "./d3-parsets.css": "./dist/d3-parsets.css",
+    "./style.css": "./dist/d3-parsets.css",
+    "./layout": {
+      "types": "./src/layout-api.d.ts",
+      "default": "./src/layout-api.js"
+    },
+    "./dist/*": "./dist/*"
+  },
+  "files": [
+    "dist/d3-parsets.js",
+    "dist/d3-parsets.min.js",
+    "dist/d3-parsets.css",
+    "src",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "scripts": {
+    "build": "mkdir -p dist && esbuild src/index.js --bundle --format=esm --packages=external --outfile=dist/d3-parsets.js && cp d3.parsets.css dist/d3-parsets.css",
+    "build:min": "npm run build --silent && esbuild src/index.js --bundle --format=iife --global-name=d3Parsets --minify --outfile=dist/d3-parsets.min.js",
+    "prepack": "npm run build:min --silent",
+    "test": "node --test test/unit/*.test.js && npm run lint && npm run test:types",
+    "lint": "eslint src test/unit test/browser/*.js test/server.js playwright.config.js eslint.config.js",
+    "test:browser": "playwright test",
+    "test:types": "tsc -p test/types"
+  },
+  "dependencies": {
+    "d3-dispatch": "^3.0.1",
+    "d3-drag": "^3.0.0",
+    "d3-ease": "^3.0.1",
+    "d3-format": "^3.1.0",
+    "d3-interpolate": "^3.0.1",
+    "d3-selection": "^3.0.0",
+    "d3-timer": "^3.0.1",
+    "d3-transition": "^3.0.1"
+  },
   "devDependencies": {
-    "uglify-js": "1.2.x"
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.64.1",
+    "esbuild": "^0.25.0",
+    "eslint": "^10.12.0",
+    "globals": "^17.13.0",
+    "typescript": "^5.9.3"
   }
 }

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>d3-parsets example</title>
+<link rel="stylesheet" href="../dist/d3-parsets.css">
+<style>
+  body { font: 14px sans-serif; margin: 2em; }
+  label { margin-right: 1em; }
+</style>
+
+<p>
+  <!-- Without autocomplete, a reload cannot restore ticks the chart does not show. -->
+  <label><input type="checkbox" id="curved" autocomplete="off"> Curved</label>
+  <label><input type="checkbox" id="horizontal" autocomplete="off"> Horizontal</label>
+</p>
+<div id="chart"></div>
+
+<!-- Classic scripts, so this page also works when opened as a file. Build
+     dist/ first with `npm run build:min`. -->
+<script src="d3.v7.min.js"></script>
+<script src="../dist/d3-parsets.min.js"></script>
+<script>
+// Titanic passengers and crew, counted by class, age, sex and survival.
+const titanic = [
+  {Class: "First Class", Age: "Child", Sex: "Female", Survived: "Survived", count: 1},
+  {Class: "First Class", Age: "Child", Sex: "Male", Survived: "Survived", count: 5},
+  {Class: "First Class", Age: "Adult", Sex: "Female", Survived: "Survived", count: 140},
+  {Class: "First Class", Age: "Adult", Sex: "Female", Survived: "Perished", count: 4},
+  {Class: "First Class", Age: "Adult", Sex: "Male", Survived: "Survived", count: 57},
+  {Class: "First Class", Age: "Adult", Sex: "Male", Survived: "Perished", count: 118},
+  {Class: "Second Class", Age: "Child", Sex: "Female", Survived: "Survived", count: 13},
+  {Class: "Second Class", Age: "Child", Sex: "Male", Survived: "Survived", count: 11},
+  {Class: "Second Class", Age: "Adult", Sex: "Female", Survived: "Survived", count: 80},
+  {Class: "Second Class", Age: "Adult", Sex: "Female", Survived: "Perished", count: 13},
+  {Class: "Second Class", Age: "Adult", Sex: "Male", Survived: "Survived", count: 14},
+  {Class: "Second Class", Age: "Adult", Sex: "Male", Survived: "Perished", count: 154},
+  {Class: "Third Class", Age: "Child", Sex: "Female", Survived: "Survived", count: 14},
+  {Class: "Third Class", Age: "Child", Sex: "Female", Survived: "Perished", count: 17},
+  {Class: "Third Class", Age: "Child", Sex: "Male", Survived: "Survived", count: 13},
+  {Class: "Third Class", Age: "Child", Sex: "Male", Survived: "Perished", count: 35},
+  {Class: "Third Class", Age: "Adult", Sex: "Female", Survived: "Survived", count: 76},
+  {Class: "Third Class", Age: "Adult", Sex: "Female", Survived: "Perished", count: 89},
+  {Class: "Third Class", Age: "Adult", Sex: "Male", Survived: "Survived", count: 75},
+  {Class: "Third Class", Age: "Adult", Sex: "Male", Survived: "Perished", count: 387},
+  {Class: "Crew", Age: "Adult", Sex: "Female", Survived: "Survived", count: 20},
+  {Class: "Crew", Age: "Adult", Sex: "Female", Survived: "Perished", count: 3},
+  {Class: "Crew", Age: "Adult", Sex: "Male", Survived: "Survived", count: 192},
+  {Class: "Crew", Age: "Adult", Sex: "Male", Survived: "Perished", count: 670}
+];
+
+const dimensions = ["Survived", "Sex", "Age", "Class"];
+
+// Each dimension's category order, starting in the order the data has them.
+// The chart reports orders that are dragged or sorted, and categorySort keeps
+// them when the chart is rendered again.
+const orders = new Map(dimensions.map(name => [name, [...new Set(titanic.map(d => d[name]))]]));
+
+const chart = d3Parsets.default()
+    .dimensions(dimensions)
+    .value(d => d.count)
+    .categorySort(name => {
+      const order = orders.get(name);
+      return (a, b) => order.indexOf(a.name) - order.indexOf(b.name);
+    })
+    .on("sortDimensions.example", order => chart.dimensions(order))
+    .on("sortCategories.example", (name, order) => orders.set(name, order));
+
+const svg = d3.select("#chart").append("svg")
+    .attr("width", chart.width())
+    .attr("height", chart.height())
+    .datum(titanic)
+    .call(chart);
+
+d3.select("#curved").on("change", function() {
+  svg.transition().duration(500).call(chart.tension(this.checked ? 0.5 : 1));
+});
+
+d3.select("#horizontal").on("change", function() {
+  // The chart turns a quarter turn. Reversing its categories at the same time
+  // keeps them in place, so it just rotates.
+  for (const [name, order] of orders) orders.set(name, order.slice().reverse());
+  svg.transition().duration(1000).call(chart.orientation(this.checked ? "horizontal" : "vertical"));
+});
+</script>
