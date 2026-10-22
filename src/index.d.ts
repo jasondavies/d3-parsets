@@ -65,14 +65,15 @@ type Typename<Name extends EventName> = Name | `${Name}.${string}`;
 
 export interface Parsets<Datum = Row> {
   /** Renders the chart into each selected element, using its bound data. */
-  (selection: ParsetsSelection<Datum[]>): void;
+  (selection: ParsetsSelection<Iterable<Datum>>): void;
 
   dimensions(): (this: Element, data: Datum[], index: number) => Iterable<string>;
   /** Pass null to restore the default, the first row's keys in sorted order. */
   dimensions(dimensions: Iterable<string> | ((this: Element, data: Datum[], index: number) => Iterable<string>) | null): this;
 
   value(): (datum: Datum, index: number) => number;
-  value(value: number | ((datum: Datum, index: number) => number)): this;
+  /** Pass null to restore the default weight of one. */
+  value(value: number | ((datum: Datum, index: number) => number) | null): this;
 
   width(): number;
   /** Pass null to restore the default. */
@@ -91,7 +92,8 @@ export interface Parsets<Datum = Row> {
   nodeThickness(thickness: number | null): this;
 
   orientation(): Orientation;
-  orientation(orientation: Orientation): this;
+  /** Pass null to restore vertical orientation. */
+  orientation(orientation: Orientation | null): this;
 
   tension(): number;
   /** Pass null to restore the default. */
@@ -135,7 +137,7 @@ export interface Parsets<Datum = Row> {
    * appended to parent, an element, selector or D3 selection, or is returned
    * detached if parent is omitted.
    */
-  render(data: Datum[], parent?: Element | string | {node(): Element | null}): SVGSVGElement;
+  render(data: Iterable<Datum>, parent?: Element | string | {node(): Element | null}): SVGSVGElement;
 }
 
 /** What a categorySort comparator receives: categories before they are placed. */
@@ -152,7 +154,7 @@ export type CategoryComparator = (a: SortableCategory, b: SortableCategory) => n
  */
 export function tree<Datum = Row>(
   root: {children: Record<string, unknown>},
-  data: Datum[],
+  data: Iterable<Datum>,
   dimensions: string[],
   value: (datum: Datum, index: number) => number
 ): TreeRoot;

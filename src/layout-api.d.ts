@@ -7,7 +7,9 @@ type Along<O extends Orientation> = O extends "horizontal" ? "y" : "x";
 type AlongSize<O extends Orientation> = O extends "horizontal" ? "dy" : "dx";
 type Across<O extends Orientation> = O extends "horizontal" ? "x" : "y";
 
-export type LayoutDimension<O extends Orientation = "vertical"> = {
+// Distribute the whole geometry over O, rather than combining the coordinate
+// keys when the caller's orientation is a union.
+export type LayoutDimension<O extends Orientation = "vertical"> = O extends Orientation ? {
   name: string;
   /** The effective bar thickness, after clamping. */
   nodeThickness: number;
@@ -15,9 +17,9 @@ export type LayoutDimension<O extends Orientation = "vertical"> = {
 } & {
   /** The bar's centre. */
   [K in Across<O>]: number;
-};
+} : never;
 
-export type LayoutCategory<O extends Orientation = "vertical"> = {
+export type LayoutCategory<O extends Orientation = "vertical"> = O extends Orientation ? {
   name: string;
   count: number;
 } & {
@@ -26,9 +28,9 @@ export type LayoutCategory<O extends Orientation = "vertical"> = {
 } & {
   /** The category's size. */
   [K in AlongSize<O>]: number;
-};
+} : never;
 
-export type LayoutEndpoint<O extends Orientation = "vertical"> = {
+export type LayoutEndpoint<O extends Orientation = "vertical"> = O extends Orientation ? {
   dimension: LayoutDimension<O>;
   category: LayoutCategory<O>;
 } & {
@@ -40,9 +42,9 @@ export type LayoutEndpoint<O extends Orientation = "vertical"> = {
 } & {
   /** Where the ribbon attaches, including the bar's thickness. */
   [K in Across<O>]: number;
-};
+} : never;
 
-export interface LayoutLink<O extends Orientation = "vertical"> {
+export type LayoutLink<O extends Orientation = "vertical"> = O extends Orientation ? {
   /** The category names along the link's path, joined with "\0". */
   path: string;
   count: number;
@@ -50,22 +52,23 @@ export interface LayoutLink<O extends Orientation = "vertical"> {
   rootCategory: string;
   source: LayoutEndpoint<O>;
   target: LayoutEndpoint<O>;
-}
+} : never;
 
-export interface LayoutResult<O extends Orientation = "vertical"> {
+export type LayoutResult<O extends Orientation = "vertical"> = O extends Orientation ? {
   dimensions: LayoutDimension<O>[];
   links: LayoutLink<O>[];
-}
+} : never;
 
 export interface ParsetsLayout<Datum = Row, O extends Orientation = "vertical"> {
   /** Computes fresh geometry for data. */
-  (data: Datum[], ...args: unknown[]): LayoutResult<O>;
+  (data: Iterable<Datum>, ...args: unknown[]): LayoutResult<O>;
 
   dimensions(): (data: Datum[], ...args: unknown[]) => Iterable<string>;
   dimensions(dimensions: Iterable<string> | ((data: Datum[], ...args: unknown[]) => Iterable<string>) | null): this;
 
   value(): (datum: Datum, index: number) => number;
-  value(value: number | ((datum: Datum, index: number) => number)): this;
+  /** Pass null to restore the default weight of one. */
+  value(value: number | ((datum: Datum, index: number) => number) | null): this;
 
   width(): number;
   /** Pass null to restore the default. */
@@ -87,7 +90,8 @@ export interface ParsetsLayout<Datum = Row, O extends Orientation = "vertical"> 
   categorySort(sort: ((dimension: string) => CategoryComparator | null | undefined | false) | null | undefined): this;
 
   orientation(): O;
-  orientation<O2 extends Orientation>(orientation: O2): ParsetsLayout<Datum, O2>;
+  /** Pass null to restore vertical orientation. */
+  orientation<O2 extends Orientation | null>(orientation: O2): ParsetsLayout<Datum, O2 extends Orientation ? O2 : "vertical">;
 }
 
 /** Creates a layout that computes chart geometry without a DOM. */

@@ -33,6 +33,7 @@ const listener = chart.on("sortCategories");
 listener?.call(document.body, "Class", ["First", "Second"]);
 chart.dimensions((data, i) => new Set(Object.keys(data[i])));
 chart.tooltip(null).categoryTooltip(null).categorySortKey(null).color(null).categorySort(null);
+chart.value(null).orientation(null);
 
 // The chart can be called on anything with each(), such as a selection.
 chart({each(callback) { callback.call(document.body, [], 0, []); }});
@@ -55,6 +56,53 @@ const horizontal = layout<Passenger>().orientation("horizontal").width(960)([]);
 const columnX: number = horizontal.dimensions[0].x;
 const top: number = horizontal.dimensions[0].categories[0].y + horizontal.links[0].target.dy;
 
+// Iterables work at every data entry point; callbacks still receive arrays.
+const passengers = new Set<Passenger>();
+function* passengerRows() { yield* passengers; }
+chart.render(passengers);
+chart.render(passengerRows());
+chart({each(callback) { callback.call(document.body, passengers, 0, []); }});
+chart({each(callback) { callback.call(document.body, passengerRows(), 0, []); }});
+parsetsLayout<Passenger>()(passengers);
+layout<Passenger>()(passengerRows());
+tree({children: {}}, passengers, ["Class"], d => +d.Number);
+tree({children: {}}, passengerRows(), ["Class"], d => +d.Number);
+
+const reset = layout<Passenger>().orientation("horizontal").value(null).orientation(null);
+const resetOrientation: "vertical" = reset.orientation();
+const resetY: number = reset(passengers).dimensions[0].y;
+// @ts-expect-error resetting orientation restores vertical geometry
+reset(passengers).dimensions[0].x;
+
+// An orientation chosen at runtime gives one geometry or the other, not both.
+const dynamic = layout<Passenger>().orientation(orientation)(passengers);
+const dimension = dynamic.dimensions[0];
+// @ts-expect-error a vertical dimension has no x
+dimension.x.toFixed();
+// @ts-expect-error a horizontal dimension has no y
+dimension.y.toFixed();
+if ("x" in dimension) {
+  dimension.x.toFixed();
+  dimension.categories[0].dy.toFixed();
+} else {
+  dimension.y.toFixed();
+  dimension.categories[0].dx.toFixed();
+}
+const category = dynamic.dimensions[0].categories[0];
+// @ts-expect-error a vertical category has no dy
+category.dy.toFixed();
+// @ts-expect-error a horizontal category has no dx
+category.dx.toFixed();
+const endpoint = dynamic.links[0].source;
+// @ts-expect-error a horizontal endpoint has no dx
+endpoint.dx.toFixed();
+if ("dx" in endpoint) endpoint.category.dx.toFixed();
+else endpoint.category.dy.toFixed();
+
+const maybeReset = layout().orientation(Math.random() < 0.5 ? "horizontal" : null)([]);
+// @ts-expect-error null may have reset the layout to vertical
+maybeReset.dimensions[0].x.toFixed();
+
 // @ts-expect-error orientations are "vertical" or "horizontal"
 chart.orientation("diagonal");
 // @ts-expect-error a horizontal layout has no category x
@@ -66,4 +114,4 @@ chart.on("resize", () => {});
 // @ts-expect-error value accessors return numbers
 chart.value(d => d.Class);
 
-export {width, orientation, svg, total, parentCount, same, y, x, columnX, top};
+export {width, orientation, svg, total, parentCount, same, y, x, columnX, top, resetOrientation, resetY};

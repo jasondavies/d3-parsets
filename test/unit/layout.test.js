@@ -209,6 +209,29 @@ test("a tree reused with fewer dimensions ends at the last of them", () => {
   assert.equal(root.children.a.children.x.count, 2);
 });
 
+test("a reused tree updates dimension names, including retained zero-count nodes", () => {
+  const root = buildTree({children: {}}, [{A: "x", B: "y"}, {A: "absent", B: "old"}], ["A", "B"], () => 1);
+  const existing = root.children.x;
+  buildTree(root, [{C: "x", D: "y"}], ["C", "D"], () => 2);
+  assert.equal(root.children.x, existing);
+  assert.equal(root.count, 2);
+  assert.equal(existing.children.y.count, 2);
+  assert.equal(root.children.absent.count, 0);
+  for (const first of Object.values(root.children)) {
+    assert.equal(first.dimension, "C");
+    assert.equal(first.parent, root);
+    for (const second of Object.values(first.children)) {
+      assert.equal(second.dimension, "D");
+      assert.equal(second.parent, first);
+    }
+  }
+  buildTree(root, [{C: "x", D: "x"}], ["D", "C"], () => 1);
+  assert.equal(existing.dimension, "D");
+  assert.equal(existing.children.x.dimension, "C");
+  assert.equal(existing.children.y.dimension, "C");
+  assert.equal(existing.children.y.count, 0);
+});
+
 test("layout settings restore their defaults with null, and categorySort takes a function", () => {
   const layout = make().width(100).height(100).spacing(5).nodeThickness(3);
   layout.width(null).height(null).spacing(null).nodeThickness(null);

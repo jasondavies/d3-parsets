@@ -15,7 +15,7 @@ function buildTree(root, data, dimensions, value, orders) {
     return v;
   });
   // The root keeps its children, even with no dimensions.
-  zeroCounts(root, Math.max(1, dimensions.length));
+  zeroCounts(root, dimensions);
   const n = data.length;
   const nd = dimensions.length;
   for (let i = 0; i < n; i++) {
@@ -44,17 +44,21 @@ function buildTree(root, data, dimensions, value, orders) {
   return root;
 }
 
-// Resets counts, and ends the tree at the given depth, in case it was built
-// with more dimensions.
-function zeroCounts(d, depth) {
+// Resets counts and dimension metadata, and ends the tree at the new depth,
+// in case it was built with more dimensions. Keep the root's children even
+// when there are no dimensions.
+function zeroCounts(d, dimensions, depth = 0) {
   d.count = 0;
-  if (!depth) d.children = null;
+  if (depth) {
+    if (depth <= dimensions.length) d.dimension = dimensions[depth - 1];
+    if (depth >= dimensions.length) d.children = null;
+  }
   if (d.children) {
     // Accept the historical {children: {}} root without treating category
     // names such as __proto__ as setters or inherited properties. Copy it
     // rather than change the prototype of the caller's object.
     if (Object.getPrototypeOf(d.children) !== null) d.children = Object.assign(Object.create(null), d.children);
-    for (const child of Object.values(d.children)) zeroCounts(child, depth - 1);
+    for (const child of Object.values(d.children)) zeroCounts(child, dimensions, depth + 1);
   }
 }
 
