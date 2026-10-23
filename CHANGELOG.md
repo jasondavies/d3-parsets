@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- A dimension or category that is still moving when the chart is rendered again carries on as it was, if it ends up in the same place, instead of starting its move again over the render's duration. A render that only changes the tension, say, no longer slows down a sort or drag in progress, nor makes it end later.
+- The README now says that dragging and sorting use the duration the chart had when it was last rendered.
+
 ## 3.0.0
 
 A rewrite as ES modules for D3 v7. The chart's behaviour and styling follow 1.x except where noted below.

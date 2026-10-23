@@ -106,7 +106,9 @@ svg.transition().duration(750).call(chart.tension(0.5));
 
 <a name="parsets_duration" href="#parsets_duration">#</a> parsets.<b>duration</b>(<i>duration</i>)
 
-Specifies the duration for the animated transitions in milliseconds. If *duration* is not specified, returns the current duration, which defaults to 500. Interactions always use this duration; a render uses it unless the chart is called through a transition (see [tension](#parsets_tension)). When the user prefers reduced motion, every change happens at once, ignoring any duration or delay.
+Specifies the duration for the animated transitions in milliseconds. If *duration* is not specified, returns the current duration, which defaults to 500. Dragging and sorting use the duration the chart had when it was last rendered, so render the chart again to change theirs; a render uses it unless the chart is called through a transition (see [tension](#parsets_tension)). When the user prefers reduced motion, every change happens at once, ignoring any duration or delay.
+
+A dimension or category that is still moving when the chart is rendered again carries on as it was, at its own pace, if it ends up in the same place. So a render that only changes the tension, for example, curves the ribbons without restarting a sort or drag that is still moving. Those whose places change move afresh, with the render's timing.
 
 <a name="parsets_dimensionFormat" href="#parsets_dimensionFormat">#</a> parsets.<b>dimensionFormat</b>(<i>dimensionFormat</i>)
 

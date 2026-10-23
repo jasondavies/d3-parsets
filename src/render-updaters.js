@@ -1,7 +1,8 @@
 import { drag } from "d3-drag";
+import { easeCubic } from "d3-ease";
 import { interpolateNumber } from "d3-interpolate";
 import { select } from "d3-selection";
-import { timeout } from "d3-timer";
+import { now, timeout } from "d3-timer";
 import { columnHeaderOffset, frameTransform, header, inset, labelBand, upright } from "./frame.js";
 import {
   cancelEvent,
@@ -130,6 +131,8 @@ function updateDimensions(state, source) {
   // Turning moves displayed positions to where a turned copy of the old
   // layout leaves them, before they animate to the new layout.
   const turn = source && turnLayout(state, source, widths);
+  // Categories where a ribbon now ends somewhere else, or a ribbon is new.
+  const moved = new Set();
   state.nodes.forEach(node => {
     // A category path can reuse a DOM element even when its dimensions change.
     // Every new endpoint needs a valid start, including those without a match.
@@ -142,6 +145,8 @@ function updateDimensions(state, source) {
       node.source.x0 = old.source.x0 ?? old.source.x;
       node.target.x0 = old.target.x0 ?? old.target.x;
     }
+    if (old?.source.x !== node.source.x) moved.add(node.source.node);
+    if (old?.target.x !== node.target.x) moved.add(node.target.node);
     turn?.endpoint(node.source, old?.source);
     turn?.endpoint(node.target, old?.target);
   });
@@ -202,7 +207,7 @@ function updateDimensions(state, source) {
     drag()
       .subject(function(_event, d) {
         if (!state.active) return null;
-        select(this).interrupt();
+        stop(this);
         d.y0 = displayed(this, "f", d.y);
         return {x: 0, y: d.y0};
       })
@@ -240,9 +245,7 @@ function updateDimensions(state, source) {
           updateCategories(state, dimensionSelection);
           alignHeaders(state, dimensionSelection);
           // The dragged dimension stays at the pointer.
-          transitionSelection(dimensionSelection.filter(dimension => dimension !== d), motion(state))
-            .attr("transform", d => `translate(0,${d.y})`)
-            .tween("ribbon", d => ribbonTweenY(state, d));
+          move(state, dimensionSelection.filter(dimension => dimension !== d), motion(state), "y");
           state.dispatcher.call("sortDimensions", this, state.dimensionNames.slice());
           if (!state.active) return;
         }
@@ -250,18 +253,16 @@ function updateDimensions(state, source) {
 
         // Layout assigns a new resting slot on reorder; keep the dragged
         // dimension at its displayed position until the pointer is released.
-        select(this).interrupt().attr("transform", `translate(0,${d.y0})`);
+        stop(this).attr("transform", `translate(0,${d.y0})`);
 
         for (const r of d.ribbons) state.paths.get(r)?.setAttribute("d", state.ribbonPath(r));
       })
-      .on("end", function(_event, d) {
+      .on("end", function() {
         if (!state.active) return;
         state.dragging--;
         state.unhighlight();
         positionDimensions(state.dimensions, ...dimensionAxis(state));
-        transitionSelection(select(this), motion(state, state.ease))
-          .attr("transform", `translate(0,${d.y})`)
-          .tween("ribbon", () => ribbonTweenY(state, d));
+        move(state, select(this), motion(state, state.ease), "y");
       })
   );
 
@@ -285,14 +286,16 @@ function updateDimensions(state, source) {
     .select("tspan.sort.value")
     .on("click.parsets", sortBy(state, "value", ascending.value, -1, dimensionSelection));
 
-  transitionSelection(dimensionSelection, state.timing)
-    .attr("transform", d => `translate(0,${d.y})`)
-    .tween("ribbon", d => ribbonTweenY(state, d));
+  // A dimension or category still on its way to where it ends up carries on
+  // as it was, and a ribbon end with it, unless the ribbon ends somewhere
+  // else now; a turn moves everything afresh.
+  const carryOn = !turn && !stillness();
+  move(state, dimensionSelection, state.timing, "y", carryOn && (() => true));
 
   dimension.exit().remove();
 
   alignHeaders(state, dimensionSelection);
-  updateCategories(state, dimensionSelection, state.timing);
+  updateCategories(state, dimensionSelection, state.timing, carryOn && (d => !moved.has(d)));
   updateRibbons(state);
   return turn;
 }
@@ -457,8 +460,10 @@ function updateRibbons(state) {
  * @param {RenderContext} state
  * @param {*} dimensionSelection
  * @param {import("./render-context.js").Timing} [timing] defaults to the chart's
+ * @param {((d: any) => boolean)|false} [carryOn] which categories may carry on
+ *   moving as they were, if they still end up where they were going
  */
-function updateCategories(state, dimensionSelection, timing = motion(state)) {
+function updateCategories(state, dimensionSelection, timing = motion(state), carryOn = false) {
   const category = dimensionSelection
     .selectAll("g.category")
     .data(
@@ -494,7 +499,7 @@ function updateCategories(state, dimensionSelection, timing = motion(state)) {
       state.categoryDrag ??= drag()
         .subject(function(_event, d) {
           if (!state.active) return null;
-          select(this).interrupt();
+          stop(this);
           d.x0 = displayed(this, "e", d.x);
           return {x: d.x0, y: 0};
         })
@@ -567,9 +572,7 @@ function updateCategories(state, dimensionSelection, timing = motion(state)) {
             if (!state.active) return;
           }
           d.x0 = event.x;
-          select(this)
-            .interrupt()
-            .attr("transform", node => `translate(${node.x0})`);
+          stop(this).attr("transform", node => `translate(${node.x0})`);
           for (const r of d.ribbons) state.paths.get(r)?.setAttribute("d", state.ribbonPath(r));
         })
         .on("end", function(event, d) {
@@ -585,13 +588,11 @@ function updateCategories(state, dimensionSelection, timing = motion(state)) {
           if (!(e?.type === "mouseup" && this.contains(this.getRootNode().elementFromPoint?.(e.clientX, e.clientY)))) {
             state.unhighlight();
           }
-          transitionSelection(select(this), motion(state, state.ease))
-            .attr("transform", `translate(${d.x})`)
-            .tween("ribbon", () => ribbonTweenX(state, d));
+          move(state, select(this), motion(state, state.ease), "x");
         })
     );
 
-  moveCategories(state, categorySelection, timing);
+  moveCategories(state, categorySelection, timing, carryOn);
 
   categoryEnter.append("rect");
 
@@ -647,11 +648,77 @@ function labelCategories(state, categories) {
  * @param {RenderContext} state
  * @param {*} categories
  * @param {import("./render-context.js").Timing} timing
+ * @param {((d: any) => boolean)|false} [carryOn]
  */
-function moveCategories(state, categories, timing) {
-  transitionSelection(categories, timing)
-    .attr("transform", d => `translate(${d.x})`)
-    .tween("ribbon", d => ribbonTweenX(state, d));
+function moveCategories(state, categories, timing, carryOn = false) {
+  move(state, categories, timing, "x", carryOn);
+}
+
+// Where each dimension or category element is moving to, and when, so that a
+// render that leaves its destination unchanged can let it carry on.
+const motions = new WeakMap();
+
+/**
+ * Moves dimensions ("y") or categories ("x") to their places, animating their
+ * ribbons' ends. Those that carryOn allows, and that are still on their way
+ * to the same places, carry on as they were, with the timing they started
+ * with, rather than starting again with this one.
+ * @param {RenderContext} state
+ * @param {*} selection
+ * @param {import("./render-context.js").Timing} timing
+ * @param {"x"|"y"} axis
+ * @param {((d: any) => boolean)|false} [carryOn]
+ */
+function move(state, selection, timing, axis, carryOn = false) {
+  const transform = axis === "x" ? d => `translate(${d.x})` : d => `translate(0,${d.y})`;
+  const tween = axis === "x" ? d => ribbonTweenX(state, d) : d => ribbonTweenY(state, d);
+  const continuing = new Set();
+  if (carryOn) {
+    selection.each(function(d) {
+      const rest = carryOn(d) && remainder(this, d[axis]);
+      if (!rest) return;
+      continuing.add(this);
+      transitionSelection(select(this), rest).attr("transform", transform).tween("ribbon", tween);
+    });
+  }
+  const fresh = continuing.size ? selection.filter(function() { return !continuing.has(this); }) : selection;
+  const start = now() + timing.delay;
+  fresh.each(function(d) {
+    if (timing.delay || timing.duration) motions.set(this, {to: d[axis], start, duration: timing.duration, ease: timing.ease ?? easeCubic});
+    else motions.delete(this);
+  });
+  transitionSelection(fresh, timing).attr("transform", transform).tween("ribbon", tween);
+}
+
+/**
+ * The timing for the rest of an element's motion, if it is still on its way
+ * to the given place: from where it is shown, it follows the same path, at
+ * the same pace, and arrives when it would have done.
+ * @param {Element} node
+ * @param {number} to
+ * @returns {import("./render-context.js").Timing|null}
+ */
+function remainder(node, to) {
+  const m = motions.get(node);
+  if (!m || m.to !== to) return null;
+  const elapsed = now() - m.start;
+  if (elapsed >= m.duration) return null;
+  if (elapsed <= 0) return {delay: -elapsed, duration: m.duration, ease: m.ease};
+  // Eased progress from here, as a fraction of the distance still to go.
+  const f = elapsed / m.duration;
+  const done = m.ease(f);
+  // An elastic ease can pass its destination; there, start again instead.
+  if (Math.abs(1 - done) < 1e-6) return null;
+  return {delay: 0, duration: m.duration - elapsed, ease: u => (m.ease(f + u * (1 - f)) - done) / (1 - done)};
+}
+
+/**
+ * Stops an element's motion, such as when it is grabbed.
+ * @param {Element} node
+ */
+function stop(node) {
+  motions.delete(node);
+  return select(node).interrupt();
 }
 
 /**

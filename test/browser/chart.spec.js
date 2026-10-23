@@ -1913,3 +1913,102 @@ test("a failed render leaves sort marks and colour slots as they were", async ({
   expect(result.unchanged).toBe(true);
   expect(result.classes).toEqual(["a:category-0", "b:category-1"]);
 });
+
+// Keeps dragged and sorted orders across renders, as the README suggests.
+async function keepOrders(page) {
+  await page.evaluate(() => {
+    window.keepOrders = c => {
+      const orders = new Map();
+      return c
+        .on("sortCategories.test", (dimension, order) => orders.set(dimension, order))
+        .on("sortDimensions.test", order => c.dimensions(order))
+        .categorySort(dimension => orders.has(dimension)
+          ? (a, b) => orders.get(dimension).indexOf(a.name) - orders.get(dimension).indexOf(b.name)
+          : null);
+    };
+  });
+}
+
+test("a render that leaves moving categories' destinations alone lets them carry on", async ({page}) => {
+  // Each category has one ribbon, so the ribbon's end is at the bar's
+  // displayed left edge.
+  await keepOrders(page);
+  await page.evaluate(() => mount([{A: "a", B: "y"}, {A: "b", B: "x"}], c => keepOrders(c.dimensions(["A", "B"]).duration(600))));
+  await settled(page);
+  const result = await page.evaluate(async () => {
+    // Sort B's categories from A to Z, which swaps them.
+    document.querySelectorAll("g.dimension")[1].querySelector("tspan.sort.key")
+      .dispatchEvent(new MouseEvent("click", {bubbles: true}));
+    const start = performance.now();
+    const categories = () => [...document.querySelectorAll("g.dimension")[1].querySelectorAll("g.category")];
+    const frames = [];
+    let rendered = false;
+    let settledAt;
+    while (performance.now() - start < 1200) {
+      await new Promise(requestAnimationFrame);
+      const elapsed = performance.now() - start;
+      if (!rendered && elapsed > 250) {
+        rendered = true;
+        svg.call(chart.tension(0.5));
+      }
+      const bars = new Map(categories().map(n => [n.__data__, n.transform.baseVal.consolidate().matrix.e]));
+      // A ribbon's end in B: after M and L, or the second C's end point.
+      const ends = [...document.querySelectorAll(".ribbon path")].map(path => {
+        const n = path.getAttribute("d").match(/-?\d*\.?\d+(?:e[-+]?\d+)?/g).map(Number);
+        return {ribbon: n.length > 7 ? n[6] : n[2], bar: bars.get(path.__data__.target.node)};
+      });
+      frames.push({elapsed, ends});
+      if (settledAt === undefined && categories().every(n => !n.__transition)) settledAt = elapsed;
+    }
+    return {
+      settledAt,
+      frames,
+      resting: categories().map(n => [n.__data__.name, n.transform.baseVal.consolidate().matrix.e, n.__data__.x])
+        .sort((a, b) => a[2] - b[2]),
+      curved: [...document.querySelectorAll(".ribbon path")].every(n => n.getAttribute("d").includes("C"))
+    };
+  });
+  // Without the render, the sort ends at 600ms; starting again at 250ms
+  // would end it at 850ms.
+  expect(result.settledAt).toBeLessThan(700);
+  for (const frame of result.frames) {
+    for (const end of frame.ends) expect(end.ribbon).toBeCloseTo(end.bar, 3);
+  }
+  expect(result.resting.map(([name]) => name)).toEqual(["x", "y"]);
+  for (const [, shown, x] of result.resting) expect(shown).toBeCloseTo(x, 6);
+  expect(result.curved).toBe(true);
+  await settled(page);
+});
+
+test("a render that leaves a moving dimension's destination alone lets it carry on", async ({page}) => {
+  await keepOrders(page);
+  await page.evaluate(() => mount(rows, c => keepOrders(c.dimensions(["A", "B", "C"]).duration(600))));
+  await settled(page);
+  // Drag A below C, which moves B and C up.
+  const box = await page.locator("tspan.name").first().boundingBox();
+  const x = box.x + 10, y = box.y + box.height / 2;
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  for (let i = 1; i <= 10; i++) await page.mouse.move(x, y + i * 60);
+  const result = await page.evaluate(async () => {
+    const start = performance.now();
+    const moving = () => [...document.querySelectorAll("g.dimension")].filter(n => n.__data__.name !== "A");
+    let rendered = false;
+    let settledAt;
+    while (performance.now() - start < 1200) {
+      await new Promise(requestAnimationFrame);
+      const elapsed = performance.now() - start;
+      if (!rendered && elapsed > 250) {
+        rendered = true;
+        svg.call(chart.tension(0.5));
+      }
+      if (settledAt === undefined && moving().every(n => !n.__transition)) settledAt = elapsed;
+    }
+    return {settledAt, order: chart.dimensions()(rows)};
+  });
+  await page.mouse.up();
+  expect(result.order).toEqual(["B", "C", "A"]);
+  // B and C started moving up during the drag, at most 600ms before the end.
+  expect(result.settledAt).toBeLessThan(700);
+  await settled(page);
+});
