@@ -145,8 +145,9 @@ function fadingLabels(root, plot) {
     const category = this.closest("g.category");
     const outer = layer.append("g");
     let parent = outer;
-    if (dimension) parent = parent.append("g").attr("class", "dimension");
-    if (category) parent = parent.append("g").attr("class", "category");
+    // With the data of what they copy, for any selection of the classes.
+    if (dimension) parent = parent.append("g").attr("class", "dimension").datum(dimension.__data__);
+    if (category) parent = parent.append("g").attr("class", "category").datum(category.__data__);
     const copy = this.cloneNode(true);
     copy.setAttribute("transform", `matrix(${m.a},${m.b},${m.c},${m.d},${m.e},${m.f})`);
     parent.node().append(copy);

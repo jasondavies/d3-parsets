@@ -2021,6 +2021,8 @@ test("labels as shown before a turn fade out as it starts", async ({page}) => {
     const layer = () => document.querySelector(".parsets-turning-labels");
     svg.call(chart.orientation("horizontal"));
     const copies = [...layer().querySelectorAll("text")].map(n => n.textContent);
+    // Selecting the classes, as callers may, finds data on the copies too.
+    if (![...document.querySelectorAll("g.dimension, g.category")].every(n => n.__data__?.name !== undefined)) return null;
     const opacities = [];
     while (layer()) {
       opacities.push(+getComputedStyle(layer()).opacity);
@@ -2028,6 +2030,7 @@ test("labels as shown before a turn fade out as it starts", async ({page}) => {
     }
     return {copies, opacities};
   });
+  expect(result).not.toBeNull();
   expect(result.copies).toEqual(labels);
   // Fading out over the start of the turn, and gone at its end.
   expect(result.opacities.length).toBeGreaterThan(3);
