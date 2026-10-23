@@ -128,19 +128,38 @@ function fadingLabels(root, plot) {
   if (!base) return null;
   const inverse = base.inverse();
   const layer = root.append("g").attr("class", fadingClass).attr("aria-hidden", "true").style("pointer-events", "none");
-  const inner = layer.append("g");
+  // Each copy follows the dimension or category it labels, which the render
+  // keeps, as it moves to its place in the new layout.
+  const copies = [];
   plot.selectAll("text").each(function() {
     const ctm = this.getScreenCTM();
     if (!ctm) return;
     const m = inverse.multiply(ctm);
-    let parent = inner;
-    if (this.closest("g.dimension")) parent = parent.append("g").attr("class", "dimension");
-    if (this.closest("g.category")) parent = parent.append("g").attr("class", "category");
+    const dimension = this.closest("g.dimension");
+    const category = this.closest("g.category");
+    const outer = layer.append("g");
+    let parent = outer;
+    if (dimension) parent = parent.append("g").attr("class", "dimension");
+    if (category) parent = parent.append("g").attr("class", "category");
     const copy = this.cloneNode(true);
     copy.setAttribute("transform", `matrix(${m.a},${m.b},${m.c},${m.d},${m.e},${m.f})`);
     parent.node().append(copy);
+    copies.push({node: outer.node(), category: category?.__data__, dimension: dimension?.__data__});
   });
+  layer.property("__copies", copies);
   return layer;
+}
+
+/**
+ * Moves the labels' copies with the dimensions and categories they label,
+ * from where those were when the turn started.
+ * @param {*} fading
+ */
+function placeLabels(fading) {
+  const base = fading.property("__base");
+  for (const {node, category, dimension, x0, y0} of fading.property("__copies")) {
+    node.setAttribute("transform", `translate(${category ? category.x0 - x0 : 0},${dimension ? dimension.y0 - y0 : 0})${base}`);
+  }
 }
 
 /**
@@ -166,10 +185,17 @@ function startTurn(plot, transform, horizontal, timing, labels = 0, fading) {
     // The copies were measured in the plot as it was shown, which its start
     // in the new layout draws the same.
     const m = plot.node().transform.baseVal.consolidate().matrix.inverse();
-    fading.select("g").attr("transform", `matrix(${m.a},${m.b},${m.c},${m.d},${m.e},${m.f})`);
+    fading.property("__base", `matrix(${m.a},${m.b},${m.c},${m.d},${m.e},${m.f})`);
+    for (const copy of fading.property("__copies")) {
+      copy.x0 = copy.category?.x0;
+      copy.y0 = copy.dimension?.y0;
+    }
+    placeLabels(fading);
     fading.attr("transform", transform(0));
     transitionSelection(fading, timing, turnTransition)
       .attrTween("transform", () => transform)
+      // After the positions' tweens, which come first in each frame.
+      .tween("place", () => () => placeLabels(fading))
       .styleTween("opacity", () => fadeOut)
       .on("end", () => fading.remove());
   }
