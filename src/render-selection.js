@@ -168,6 +168,7 @@ function renderSelection(selection, options) {
       const turn = updateDimensions(state, turning ? {
         horizontal: retained.horizontal,
         length: retained.length,
+        spacing: retained.spacing,
         dimensions: retained.dimensions
       } : undefined, !stopped);
       // A render that interrupts a turn carries on from where it left off,

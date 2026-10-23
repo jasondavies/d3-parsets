@@ -16,6 +16,7 @@ const turnTransition = "parsets-turn";
  * @typedef {Object} TurnSource
  * @property {boolean} horizontal
  * @property {number} length the extent of the old category axis
+ * @property {number} spacing the old spacing between categories
  * @property {Array<Object>} dimensions the old dimensions, in order
  */
 
@@ -40,7 +41,12 @@ function turnLayout(state, source, widths) {
   const s1 = source.dimensions.at(-1)?.y0 ?? 0;
   const t0 = state.dimensions[0]?.y ?? 0;
   const t1 = state.dimensions.at(-1)?.y ?? 0;
-  const sx = source.length > 0 && state.length > 0 ? state.length / source.length : 1;
+  // Categories share their axis less the spacing between them, which does
+  // not scale: scale by their total widths, so that they start as shown.
+  const bars = (length, spacing) => length - Math.min(length, spacing);
+  const b0 = bars(source.length, source.spacing);
+  const b1 = bars(state.length, state.spacing);
+  const sx = b0 > 0 && b1 > 0 ? b1 / b0 : 1;
   const from = [source.length / 2, (s0 + s1) / 2];
   const to = [state.length / 2, (t0 + t1) / 2];
   const along = x => to[0] - sx * (x - from[0]);
@@ -54,8 +60,8 @@ function turnLayout(state, source, widths) {
     });
   });
 
-  // Scaled widths can differ slightly from the new layout's, as spacing does
-  // not scale; reverse ribbon offsets in proportion. A new ribbon in a
+  // Scaled widths can still differ from the new layout's when the data
+  // changes too; reverse ribbon offsets in proportion. A new ribbon in a
   // reversed category starts reversed within it too.
   const endpoint = (e, old) => {
     const width = widths.get(e.node);

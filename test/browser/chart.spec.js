@@ -2085,3 +2085,24 @@ test("a render partway through a turn keeps dimensions and categories in step wi
   // The render's timing applies to both, rather than the turn's to the moves.
   expect(Math.abs(movesEnd - plotEnd)).toBeLessThan(50);
 });
+
+for (const [from, to] of [["vertical", "horizontal"], ["horizontal", "vertical"]]) {
+  test(`bars and ribbons start a turn from ${from} where they were shown`, async ({page}) => {
+    await page.evaluate(from => mount(rows, c => c.dimensions(["A", "B", "C"]).duration(600).orientation(from)), from);
+    await settled(page);
+    const {before, start} = await page.evaluate(to => {
+      // Spacing between categories does not scale, so scaling the plot by
+      // the axes' lengths would draw every bar a little wider or narrower.
+      const boxes = () => [...document.querySelectorAll(".parsets-plot g.category line, .parsets-plot .ribbon path")].map(n => {
+        const r = n.getBoundingClientRect();
+        return [r.x, r.y, r.width, r.height];
+      });
+      const before = boxes();
+      svg.call(chart.orientation(to));
+      return {before, start: boxes()};
+    }, to);
+    expect(start.length).toBe(before.length);
+    start.forEach((box, i) => box.forEach((v, j) => expect(Math.abs(v - before[i][j])).toBeLessThan(0.01)));
+    await settled(page);
+  });
+}
