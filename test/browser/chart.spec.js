@@ -2012,3 +2012,26 @@ test("a render that leaves a moving dimension's destination alone lets it carry 
   expect(result.settledAt).toBeLessThan(700);
   await settled(page);
 });
+
+test("labels as shown before a turn fade out as it starts", async ({page}) => {
+  await page.evaluate(() => mount(rows, c => c.dimensions(["A", "B", "C"]).duration(600)));
+  await settled(page);
+  const labels = await page.evaluate(() => [...document.querySelectorAll(".parsets-plot text")].map(n => n.textContent));
+  const result = await page.evaluate(async () => {
+    const layer = () => document.querySelector(".parsets-turning-labels");
+    svg.call(chart.orientation("horizontal"));
+    const copies = [...layer().querySelectorAll("text")].map(n => n.textContent);
+    const opacities = [];
+    while (layer()) {
+      opacities.push(+getComputedStyle(layer()).opacity);
+      await new Promise(requestAnimationFrame);
+    }
+    return {copies, opacities};
+  });
+  expect(result.copies).toEqual(labels);
+  // Fading out over the start of the turn, and gone at its end.
+  expect(result.opacities.length).toBeGreaterThan(3);
+  for (let i = 1; i < result.opacities.length; i++) expect(result.opacities[i]).toBeLessThanOrEqual(result.opacities[i - 1] + 1e-9);
+  expect(result.opacities.at(-1)).toBe(0);
+  await settled(page);
+});

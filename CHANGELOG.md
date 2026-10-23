@@ -3,6 +3,7 @@
 ## Unreleased
 
 - A dimension or category that is still moving when the chart is rendered again carries on as it was, if it ends up in the same place, instead of starting its move again over the render's duration. A render that only changes the tension, say, no longer slows down a sort or drag in progress, nor makes it end later.
+- Labels fade out as the chart starts to turn, turning with it, rather than disappearing at once, as they already faded back in at the end.
 - The README now says that dragging and sorting use the duration the chart had when it was last rendered.
 
 ## 3.0.0

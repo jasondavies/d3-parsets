@@ -10,7 +10,7 @@ import { redrawRibbons, unhighlight, updateDimensions } from "./render-updaters.
 import { createSvgTooltip, hideSvgTooltip, moveSvgTooltip, setSvgTooltip } from "./svg-tooltip.js";
 import { buildTree } from "./tree.js";
 import { prepare } from "./prepare.js";
-import { endTurn, startTurn, turnCorrection } from "./turn.js";
+import { endTurn, fadingLabels, startTurn, turnCorrection } from "./turn.js";
 
 /** @typedef {import("./render-context.js").RenderContext} RenderContext */
 /** @typedef {import("./render-context.js").RenderOptions} RenderOptions */
@@ -161,6 +161,8 @@ function renderSelection(selection, options) {
     // An animated orientation change turns the displayed chart.
     const turning = retained && retained.horizontal !== horizontal && animated &&
       plot.selectAll("g.dimension").size() > 0;
+    // The labels as shown fade out as a turn starts, unless it stops another.
+    const fading = turning && !stopped ? fadingLabels(g, plot) : null;
 
     try {
       const turn = updateDimensions(state, turning ? {
@@ -174,7 +176,7 @@ function renderSelection(selection, options) {
       if (turn || correction) {
         const frame = frameTransform(horizontal) ?? "";
         startTurn(plot, t => (correction ? correction(t) : "") + (turn ? turn.transform(t) : frame),
-          horizontal, state.timing, turn ? 0 : stopped.labels);
+          horizontal, state.timing, turn ? 0 : stopped.labels, fading);
       }
 
       if (state.tension !== state.currentTension0) {

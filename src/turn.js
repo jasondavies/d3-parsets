@@ -1,4 +1,5 @@
 import { interpolateTransformSvg } from "d3-interpolate";
+import { select } from "d3-selection";
 import { framePoint, frameTransform, header, inset, transposed } from "./frame.js";
 import { transitionSelection } from "./helpers.js";
 
@@ -111,22 +112,67 @@ function turnCorrection(shown, horizontal) {
   return t => t === 1 ? "" : i(t);
 }
 
+// The labels as shown before a turn, which fade out as it starts.
+const fadingClass = "parsets-turning-labels";
+
+/**
+ * Copies the labels as shown, before a render changes them, so that they can
+ * fade out as the chart starts to turn. The copies keep the classes of the
+ * groups the labels were in, for the stylesheet. Null if the chart is not
+ * displayed, so nothing can be measured.
+ * @param {*} root the element the chart is rendered into
+ * @param {*} plot
+ */
+function fadingLabels(root, plot) {
+  const base = root.node().getScreenCTM?.();
+  if (!base) return null;
+  const inverse = base.inverse();
+  const layer = root.append("g").attr("class", fadingClass).attr("aria-hidden", "true").style("pointer-events", "none");
+  const inner = layer.append("g");
+  plot.selectAll("text").each(function() {
+    const ctm = this.getScreenCTM();
+    if (!ctm) return;
+    const m = inverse.multiply(ctm);
+    let parent = inner;
+    if (this.closest("g.dimension")) parent = parent.append("g").attr("class", "dimension");
+    if (this.closest("g.category")) parent = parent.append("g").attr("class", "category");
+    const copy = this.cloneNode(true);
+    copy.setAttribute("transform", `matrix(${m.a},${m.b},${m.c},${m.d},${m.e},${m.f})`);
+    parent.node().append(copy);
+  });
+  return layer;
+}
+
 /**
  * Turns the plot, with labels hidden until the last third of the turn, or
- * from the opacity they had already reached.
+ * from the opacity they had already reached. The labels as they were shown,
+ * if copied, turn with the chart while they fade out in the first third.
  * @param {*} plot
  * @param {(t: number) => string} transform the plot's transform at time t
  * @param {boolean} horizontal the orientation turned to
  * @param {import("./render-context.js").Timing} timing
  * @param {number} [labels] the labels' opacity at the start
+ * @param {*} [fading] the labels as they were shown, from fadingLabels
  */
-function startTurn(plot, transform, horizontal, timing, labels = 0) {
+function startTurn(plot, transform, horizontal, timing, labels = 0, fading) {
   if (!timing.delay && !timing.duration) {
+    fading?.remove();
     plot.attr("transform", frameTransform(horizontal));
     return;
   }
   // Show the start at once, including during any delay.
   plot.property("__turning", true).attr("transform", transform(0));
+  if (fading) {
+    // The copies were measured in the plot as it was shown, which its start
+    // in the new layout draws the same.
+    const m = plot.node().transform.baseVal.consolidate().matrix.inverse();
+    fading.select("g").attr("transform", `matrix(${m.a},${m.b},${m.c},${m.d},${m.e},${m.f})`);
+    fading.attr("transform", transform(0));
+    transitionSelection(fading, timing, turnTransition)
+      .attrTween("transform", () => transform)
+      .styleTween("opacity", () => fadeOut)
+      .on("end", () => fading.remove());
+  }
   transitionSelection(plot, timing, turnTransition)
     .attrTween("transform", () => transform)
     .on("end", () => plot.property("__turning", null).attr("transform", frameTransform(horizontal)));
@@ -153,7 +199,25 @@ function endTurn(plot) {
   } : undefined;
   plot.property("__turning", null).interrupt(turnTransition)
     .selectAll("text").interrupt(turnTransition).style("opacity", null);
+  turningLabels(plot).interrupt(turnTransition).remove();
   return stopped;
 }
 
-export { endTurn, startTurn, turnCorrection, turnLayout };
+/**
+ * The opacity of the labels as they were, fading out in the first third of a
+ * turn at eased progress t.
+ * @param {number} t
+ */
+function fadeOut(t) {
+  return Math.max(0, 1 - 3 * t);
+}
+
+/**
+ * The copies of the labels as they were before a plot's turn, if any.
+ * @param {*} plot
+ */
+function turningLabels(plot) {
+  return select(plot.node().parentNode).selectAll(`:scope > g.${fadingClass}`);
+}
+
+export { endTurn, fadingLabels, startTurn, turnCorrection, turnLayout };
