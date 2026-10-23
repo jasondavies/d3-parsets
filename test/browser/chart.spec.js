@@ -2106,3 +2106,35 @@ for (const [from, to] of [["vertical", "horizontal"], ["horizontal", "vertical"]
     await settled(page);
   });
 }
+
+test("a move that carries on through a render keeps to its path, even with an elastic ease", async ({page}) => {
+  for (const at of [25, 30, 35, 40, 45]) {
+    await page.evaluate(() => mount(rows, c => c.dimensions(["A", "B", "C"])));
+    await settled(page);
+    const {low, high, seen} = await page.evaluate(async at => {
+      const {easeElastic} = await import("d3-ease");
+      const node = [...document.querySelectorAll(".parsets-plot g.dimension")].find(n => n.__data__.name === "C");
+      const y = () => node.transform.baseVal.consolidate().matrix.f;
+      const from = y();
+      svg.transition().duration(500).ease(easeElastic).call(chart.height(400));
+      const to = node.__data__.y;
+      // The elastic path's own range, which overshoots its destination.
+      const path = Array.from({length: 1001}, (_, i) => from + (to - from) * easeElastic(i / 1000));
+      const start = performance.now();
+      while (performance.now() - start < at) await new Promise(requestAnimationFrame);
+      // Only the tension changes, so C carries on to the same place.
+      svg.call(chart.tension(0.5));
+      const seen = [];
+      while (node.__transition) {
+        await new Promise(requestAnimationFrame);
+        seen.push(y());
+      }
+      return {low: Math.min(...path), high: Math.max(...path), seen};
+    }, at);
+    expect(seen.length).toBeGreaterThan(3);
+    for (const v of seen) {
+      expect(v).toBeGreaterThan(low - 2);
+      expect(v).toBeLessThan(high + 2);
+    }
+  }
+});

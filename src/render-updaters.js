@@ -679,7 +679,7 @@ function move(state, selection, timing, axis, carryOn = false) {
   const continuing = new Set();
   if (carryOn) {
     selection.each(function(d) {
-      const rest = carryOn(d) && remainder(this, d[axis]);
+      const rest = carryOn(d) && remainder(this, d[axis], d[axis + "0"]);
       if (!rest) return;
       continuing.add(this);
       transitionSelection(select(this), rest).attr("transform", transform).tween("ribbon", tween);
@@ -688,7 +688,7 @@ function move(state, selection, timing, axis, carryOn = false) {
   const fresh = continuing.size ? selection.filter(function() { return !continuing.has(this); }) : selection;
   const start = now() + timing.delay;
   fresh.each(function(d) {
-    if (timing.delay || timing.duration) motions.set(this, {to: d[axis], start, duration: timing.duration, ease: timing.ease ?? easeCubic});
+    if (timing.delay || timing.duration) motions.set(this, {from: d[axis + "0"], to: d[axis], start, duration: timing.duration, ease: timing.ease ?? easeCubic});
     else motions.delete(this);
   });
   transitionSelection(fresh, timing).attr("transform", transform).tween("ribbon", tween);
@@ -700,19 +700,22 @@ function move(state, selection, timing, axis, carryOn = false) {
  * the same pace, and arrives when it would have done.
  * @param {Element} node
  * @param {number} to
+ * @param {number} shown where it is shown
  * @returns {import("./render-context.js").Timing|null}
  */
-function remainder(node, to) {
+function remainder(node, to, shown) {
   const m = motions.get(node);
-  if (!m || m.to !== to) return null;
+  if (!m || m.to !== to || m.from === to) return null;
   const elapsed = now() - m.start;
   if (elapsed >= m.duration) return null;
   if (elapsed <= 0) return {delay: -elapsed, duration: m.duration, ease: m.ease};
-  // Eased progress from here, as a fraction of the distance still to go.
+  // Eased progress from where it is shown, which can be a frame behind the
+  // clock: an ease that passes its destination would magnify the difference.
+  // Then the rest of the path, as a fraction of the distance still to go.
   const f = elapsed / m.duration;
-  const done = m.ease(f);
-  // An elastic ease can pass its destination; there, start again instead.
-  if (Math.abs(1 - done) < 1e-6) return null;
+  const done = (shown - m.from) / (to - m.from);
+  // Close to its destination, perhaps passing it, start again instead.
+  if (Math.abs(1 - done) < 1e-3) return null;
   return {delay: 0, duration: m.duration - elapsed, ease: u => (m.ease(f + u * (1 - f)) - done) / (1 - done)};
 }
 
