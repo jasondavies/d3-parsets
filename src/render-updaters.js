@@ -83,9 +83,12 @@ function alignHeaders(state, dimensionSelection) {
  * @param {RenderContext} state
  * @param {import("./turn.js").TurnSource} [source] the layout being turned
  *   from, when the orientation changes
+ * @param {boolean} [carryOn] whether a dimension or category still moving may
+ *   carry on as it was: not in a render that stops a turn, whose correction
+ *   turns the plot with the render's timing
  * @returns {import("./turn.js").Turn|undefined}
  */
-function updateDimensions(state, source) {
+function updateDimensions(state, source, carryOn = true) {
 
   // Reuse bound dimension and category objects, which carry the displayed
   // positions that animations start from.
@@ -288,14 +291,15 @@ function updateDimensions(state, source) {
 
   // A dimension or category still on its way to where it ends up carries on
   // as it was, and a ribbon end with it, unless the ribbon ends somewhere
-  // else now; a turn moves everything afresh.
-  const carryOn = !turn && !stillness();
-  move(state, dimensionSelection, state.timing, "y", carryOn && (() => true));
+  // else now; a turn moves everything afresh, as does a render that stops
+  // one, to keep in step with the plot.
+  const carrying = carryOn && !turn && !stillness();
+  move(state, dimensionSelection, state.timing, "y", carrying && (() => true));
 
   dimension.exit().remove();
 
   alignHeaders(state, dimensionSelection);
-  updateCategories(state, dimensionSelection, state.timing, carryOn && (d => !moved.has(d)));
+  updateCategories(state, dimensionSelection, state.timing, carrying && (d => !moved.has(d)));
   updateRibbons(state);
   return turn;
 }

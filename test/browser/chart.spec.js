@@ -2035,3 +2035,25 @@ test("labels as shown before a turn fade out as it starts", async ({page}) => {
   expect(result.opacities.at(-1)).toBe(0);
   await settled(page);
 });
+test("a render partway through a turn keeps dimensions and categories in step with the plot", async ({page}) => {
+  await page.evaluate(() => mount(rows, c => c.dimensions(["A", "B", "C"]).duration(400)));
+  await settled(page);
+  const {plotEnd, movesEnd} = await page.evaluate(async () => {
+    const plot = document.querySelector(".parsets-plot");
+    svg.call(chart.orientation("horizontal"));
+    const start = performance.now();
+    while (performance.now() - start < 200) await new Promise(requestAnimationFrame);
+    svg.call(chart.tension(0.5));
+    let plotEnd;
+    let movesEnd;
+    while (plotEnd === undefined || movesEnd === undefined) {
+      await new Promise(requestAnimationFrame);
+      const t = performance.now() - start;
+      if (plotEnd === undefined && !plot.__transition) plotEnd = t;
+      if (movesEnd === undefined && ![...document.querySelectorAll("g.dimension, g.category")].some(n => n.__transition)) movesEnd = t;
+    }
+    return {plotEnd, movesEnd};
+  });
+  // The render's timing applies to both, rather than the turn's to the moves.
+  expect(Math.abs(movesEnd - plotEnd)).toBeLessThan(50);
+});

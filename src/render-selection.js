@@ -169,7 +169,7 @@ function renderSelection(selection, options) {
         horizontal: retained.horizontal,
         length: retained.length,
         dimensions: retained.dimensions
-      } : undefined);
+      } : undefined, !stopped);
       // A render that interrupts a turn carries on from where it left off,
       // and its labels from the opacity they had reached unless they turn.
       const correction = retained && animated ? turnCorrection(stopped?.shown, retained.horizontal) : null;
