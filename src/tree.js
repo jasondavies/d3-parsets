@@ -14,7 +14,6 @@ function buildTree(root, data, dimensions, value, orders) {
     }
     return v;
   });
-  // The root keeps its children, even with no dimensions.
   zeroCounts(root, dimensions);
   const n = data.length;
   const nd = dimensions.length;
