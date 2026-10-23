@@ -1,6 +1,6 @@
 {
   "name": "d3-parsets",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "Parallel Sets in JavaScript.",
   "type": "module",
   "keywords": [
