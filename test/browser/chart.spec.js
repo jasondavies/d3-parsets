@@ -2035,6 +2035,34 @@ test("labels as shown before a turn fade out as it starts", async ({page}) => {
   expect(result.opacities.at(-1)).toBe(0);
   await settled(page);
 });
+test("labels fading out as the chart turns stay with what they label", async ({page}) => {
+  await page.evaluate(() => mount(rows, c => c.dimensions(["A", "B", "C"]).duration(400)));
+  await settled(page);
+  const {drift, frames} = await page.evaluate(async () => {
+    svg.call(chart.orientation("horizontal"));
+    const layer = document.querySelector(".parsets-turning-labels");
+    const groups = [...document.querySelectorAll("g.dimension, g.category")];
+    // Each copy as placed in the dimension or category it labels.
+    const placed = () => layer.__copies.filter(c => c.category ?? c.dimension).map(({node, category, dimension}) => {
+      const group = groups.find(n => n.__data__ === (category ?? dimension));
+      const m = group.getScreenCTM().inverse().multiply(node.querySelector("text").getScreenCTM());
+      return [m.a, m.b, m.c, m.d, m.e, m.f];
+    });
+    const start = placed();
+    let drift = 0;
+    let frames = 0;
+    while (true) {
+      await new Promise(requestAnimationFrame);
+      if (!layer.isConnected) break;
+      placed().forEach((m, i) => m.forEach((v, j) => drift = Math.max(drift, Math.abs(v - start[i][j]))));
+      frames++;
+    }
+    return {drift, frames};
+  });
+  expect(frames).toBeGreaterThan(3);
+  expect(drift).toBeLessThan(0.5);
+});
+
 test("a render partway through a turn keeps dimensions and categories in step with the plot", async ({page}) => {
   await page.evaluate(() => mount(rows, c => c.dimensions(["A", "B", "C"]).duration(400)));
   await settled(page);
